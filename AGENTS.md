@@ -101,9 +101,10 @@ These are requirements, not suggestions. A change that misses one is not done.
 
 ### Ballerina suites
 
-- `go run ./tools/cmd/balsuite <smoke|full> --engine build/workflow-engine` starts the engine on
-  `tests/engine/temporal-test.yaml` (ports 17xxx, in-memory SQLite, `--allow-no-auth`), creates the `default`
-  namespace and the `WorkflowKind` search attribute, runs `bal test` in the suite, and stops the engine.
+- `go run ./tools/cmd/balsuite <smoke|full> --engine build/workflow-engine [--database sqlite|postgresql|mysql]`
+  starts the engine from `tests/engine/runtime-<database>.toml` (ports 17xxx, `--allow-no-auth`), creating the SQL
+  schemas first for PostgreSQL and MySQL; then it creates the `default` namespace and the `WorkflowKind` search
+  attribute, runs `bal test` in the suite, and stops the engine.
 - Each suite is a Ballerina package: workflows and activities in `workflows.bal`, tests in `tests/*_test.bal`
   (one file per feature area), connection settings in `tests/Config.toml`.
 - Tests use the public `ballerina/workflow` API only (`workflow:run`, `workflow:sendData`,

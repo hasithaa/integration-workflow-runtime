@@ -27,7 +27,10 @@ are what proves the runtime runs `ballerina/workflow` integrations.
 
 `go run ./tools/cmd/balsuite <smoke|full> --engine build/workflow-engine` (what `make test-smoke` and `make test-full` run):
 
-1. Starts `workflow-engine` on `tests/engine/temporal-test.yaml` with `--allow-no-auth`.
+1. Starts `workflow-engine` from `tests/engine/runtime-<database>.toml` with `--allow-no-auth` (`--database`, default
+   `sqlite`). For `postgresql` and `mysql` it first creates both databases and installs Temporal's schemas with
+   `workflow-engine-sql`; the database must be running on 15432 or 13306, user `workflow` (PostgreSQL) or `root` (MySQL), password in
+   `WORKFLOW_TEST_DB_PASSWORD`.
 2. Waits until `temporal operator cluster health` reports `SERVING` on `localhost:17233`.
 3. Creates the `default` namespace and the `WorkflowKind` search attribute `ballerina/workflow` uses.
 4. Runs `bal test` in the suite directory.
