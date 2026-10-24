@@ -31,6 +31,9 @@ are what proves the runtime runs `ballerina/workflow` integrations.
 4. Runs `bal test` in the suite directory.
 5. Stops the engine and, if anything failed, prints the end of the engine log (`ENGINE_LOG_DIR` keeps it).
 
+Every step is time-limited: each Temporal CLI call (15 s), engine start-up (`--startup-timeout`, 90 s) and
+`bal test` (`--test-timeout`, 30 min). A timeout fails the run, and the engine is still stopped.
+
 | Suite | Covers |
 |---|---|
 | Smoke | A workflow runs activities and returns; a data event resumes a waiting workflow; a failing activity fails the workflow and its status says so; concurrent instances stay independent |

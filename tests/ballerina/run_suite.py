@@ -39,10 +39,15 @@ NAMESPACE = "default"
 # ballerina/workflow tags every instance with this attribute; a fresh namespace does not define it.
 SEARCH_ATTRIBUTES = {"WorkflowKind": "Keyword"}
 SUITES = ("smoke", "full")
+CLI_TIMEOUT_SECONDS = 15
 
 
-def run_quiet(command: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(command, capture_output=True, text=True, check=False)
+def run_quiet(command: list[str], timeout: float = CLI_TIMEOUT_SECONDS) -> subprocess.CompletedProcess:
+    """Runs a short CLI call; a call that hangs counts as a failed call instead of blocking the runner."""
+    try:
+        return subprocess.run(command, capture_output=True, text=True, check=False, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(command, returncode=124, stdout="", stderr=f"timed out after {timeout:.0f}s")
 
 
 def wait_until_serving(temporal: str, engine: subprocess.Popen, timeout: float) -> None:
@@ -99,6 +104,7 @@ def main(arguments: list[str]) -> int:
     parser.add_argument("--bal", default=os.environ.get("BAL", "bal"), help="jBallerina `bal` command")
     parser.add_argument("--temporal", default=os.environ.get("TEMPORAL_CLI", "temporal"), help="Temporal CLI")
     parser.add_argument("--startup-timeout", type=float, default=90)
+    parser.add_argument("--test-timeout", type=float, default=1800, help="limit for `bal test`, in seconds")
     args = parser.parse_args(arguments)
 
     suite_dir = ROOT / "tests" / "ballerina" / args.suite
@@ -113,7 +119,10 @@ def main(arguments: list[str]) -> int:
         wait_until_serving(args.temporal, engine, args.startup_timeout)
         ensure_namespace(args.temporal, 30)
         print(f"workflow-engine SERVING on {ADDRESS}; running the {args.suite} suite", flush=True)
-        code = subprocess.run([args.bal, "test"], cwd=suite_dir, check=False).returncode
+        code = subprocess.run([args.bal, "test"], cwd=suite_dir, check=False, timeout=args.test_timeout).returncode
+    except subprocess.TimeoutExpired:
+        print(f"error: bal test did not finish within {args.test_timeout:.0f}s", file=sys.stderr)
+        code = 1
     except RuntimeError as error:
         print(f"error: {error}", file=sys.stderr)
         code = 1
