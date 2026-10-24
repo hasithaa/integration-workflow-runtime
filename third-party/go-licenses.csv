@@ -121,7 +121,7 @@ github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bac
 github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/35a7c28c31ee/LICENSE,Apache-2.0
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
 github.com/ncruces/go-strftime,https://github.com/ncruces/go-strftime/blob/v1.0.0/LICENSE,MIT
-github.com/nexus-rpc/nexus-proto-annotations/go/nexusannotations/v1,Unknown,Unknown
+github.com/nexus-rpc/nexus-proto-annotations/go/nexusannotations/v1,https://github.com/nexus-rpc/nexus-proto-annotations/blob/76486e7cc189/LICENSE,MIT
 github.com/nexus-rpc/sdk-go/nexus,https://github.com/nexus-rpc/sdk-go/blob/v0.6.0/LICENSE,MIT
 github.com/olivere/elastic/v7,https://github.com/olivere/elastic/blob/v7.0.32/LICENSE,MIT
 github.com/olivere/elastic/v7/uritemplates,https://github.com/olivere/elastic/blob/v7.0.32/uritemplates/LICENSE,MIT
