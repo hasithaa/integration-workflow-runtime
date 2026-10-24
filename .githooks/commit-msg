@@ -36,7 +36,8 @@ fi
 
 missing_license=()
 while IFS= read -r -d '' file; do
-    if [[ -f "$file" ]] && ! head -n 3 -- "$file" | grep -q 'Copyright (c) [0-9]\{4\}, WSO2 LLC. (http://www.wso2.com).'; then
+    # The staged copy, not the working tree: that is what the commit records.
+    if ! git show ":$file" | head -n 3 | grep -q 'Copyright (c) [0-9]\{4\}, WSO2 LLC. (http://www.wso2.com).'; then
         missing_license+=("$file")
     fi
 done < <(git diff --cached --name-only --diff-filter=A -z -- '*.go' '*.bal' '*.py' '*.sh')
