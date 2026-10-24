@@ -42,7 +42,8 @@ housekeeping; integration workers never connect to it.
   `temporal.NewServer`, as Temporal's own `cmd/server` does.
 - Temporal is a pinned Go module dependency (`engine/go.mod`), not copied source. Extension points are Temporal's
   public server options and plugin registration. See [0001](../decisions/0001-temporal-packaging.md).
-- **Secure by default.** The engine refuses to start with no authorizer unless `--allow-no-auth` is given, which
+- **Secure by default.** The engine refuses to start with no authorizer, or with an authorizer but no claim mapper
+  (Temporal's no-op claim mapper grants every caller system-admin claims), unless `--allow-no-auth` is given, which
   is for development and tests only. Production uses Temporal's JWT authorizer trusting the Manager's keys, over
   TLS.
 - `workflow-engine-sql` creates and upgrades Temporal's schema, built from the same Temporal version.

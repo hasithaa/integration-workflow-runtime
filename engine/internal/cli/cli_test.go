@@ -166,3 +166,34 @@ func TestMainReturnsUsageExitCode(t *testing.T) {
 		t.Fatalf("Main(nil) = %d, want 2", code)
 	}
 }
+
+func TestStartRefusesAuthorizerWithoutClaimMapper(t *testing.T) {
+	server := &fakeServer{}
+	c, _, _ := newTestCommand(server, nil)
+	err := c.start([]string{"--config-file", "testdata/authorizer-only.yaml"})
+	if err == nil || !strings.Contains(err.Error(), "no claim mapper configured") {
+		t.Fatalf("start with an authorizer and no claim mapper = %v, want the claim mapper refusal", err)
+	}
+	if server.started {
+		t.Fatal("the server started with an authorizer that admits every caller")
+	}
+}
+
+func TestStartAcceptsAuthorizerWithClaimMapper(t *testing.T) {
+	server := &fakeServer{}
+	c, _, _ := newTestCommand(server, nil)
+	if err := c.start([]string{"--config-file", "testdata/authorizer-and-claim-mapper.yaml"}); err != nil {
+		t.Fatalf("start with an authorizer and a claim mapper = %v, want nil", err)
+	}
+	if !server.started {
+		t.Fatal("the server was not started")
+	}
+}
+
+func TestStartAllowsMissingClaimMapperWhenNoAuthIsAllowed(t *testing.T) {
+	server := &fakeServer{}
+	c, _, _ := newTestCommand(server, nil)
+	if err := c.start([]string{"--config-file", "testdata/authorizer-only.yaml", "--allow-no-auth"}); err != nil {
+		t.Fatalf("start with --allow-no-auth = %v, want nil", err)
+	}
+}

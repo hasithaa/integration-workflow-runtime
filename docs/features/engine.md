@@ -19,6 +19,8 @@ built from the pinned Temporal server module. Integrations' `ballerina/workflow`
 ## Behavior
 
 - Refuses to start when the configuration sets no authorizer and `--allow-no-auth` is not given.
+- Refuses to start when an authorizer is set without a claim mapper: Temporal's no-op claim mapper gives every
+  caller system-admin claims, so the authorizer would admit anyone.
 - Exits with code 1 and a message when the configuration cannot be loaded or the server cannot start; code 2 for
   an unknown command.
 - Persistence plugins built in: PostgreSQL, MySQL, SQLite.
@@ -31,6 +33,6 @@ The engine endpoint, our authorizer, TLS and token configuration from `runtime.t
 
 | Test | Covers |
 |---|---|
-| `engine/internal/cli/cli_test.go` | Usage, version, flags, configuration errors, the no-authorizer refusal, the start path |
+| `engine/internal/cli/cli_test.go` | Usage, version, flags, configuration errors, the authorizer and claim mapper refusals, the start path |
 | `tests/ballerina/smoke` | A real engine runs workflows, activities, data events and failures |
 | `tests/ballerina/full` | Retries, timers, child workflows, human tasks, execution history |

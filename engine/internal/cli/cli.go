@@ -116,6 +116,10 @@ func (c command) start(args []string) error {
 	if authorization.IsNoopAuthorizer(authorizer) && !*allowNoAuth {
 		return errors.New("no authorizer configured; set one or pass --allow-no-auth for development")
 	}
+	// Without a claim mapper Temporal grants every caller system-admin claims, so the authorizer would admit anyone.
+	if strings.TrimSpace(cfg.Global.Authorization.ClaimMapper) == "" && !*allowNoAuth {
+		return errors.New("no claim mapper configured; an authorizer needs one (for example claimMapper: default)")
+	}
 	claimMapper, err := authorization.GetClaimMapperFromConfig(&cfg.Global.Authorization, logger)
 	if err != nil {
 		return fmt.Errorf("unable to create the claim mapper: %w", err)
