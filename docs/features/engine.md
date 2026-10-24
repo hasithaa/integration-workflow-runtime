@@ -12,7 +12,9 @@ the configuration defines one) in one binary built from the pinned Temporal serv
 | Command or flag | Default | Meaning |
 |---|---|---|
 | `workflow-engine version` | | Prints the product version and the embedded Temporal server version |
-| `workflow-engine start --config-file <file>` | required | Temporal server configuration (YAML); the launcher will write it from `conf/runtime.toml` |
+| `workflow-engine start --runtime-config <file>` | one of the two | Generate Temporal's configuration from `conf/runtime.toml` ([runtime configuration](runtime-config.md)) |
+| `workflow-engine start --config-file <file>` | one of the two | Use a Temporal server configuration (YAML) as is |
+| `workflow-engine render-config --runtime-config <file>` | | Print the configuration generated from `runtime.toml`, password hidden |
 | `--service <name>` (repeatable) | `frontend`, `history`, `matching`, `worker`, plus `internal-frontend` when `services.internal-frontend` is configured | `frontend`, `internal-frontend`, `history`, `matching`, `worker` |
 | `--allow-no-auth` | off | Start without an authorizer; development and tests only |
 
@@ -35,7 +37,7 @@ the configuration defines one) in one binary built from the pinned Temporal serv
 
 ## Not covered yet
 
-The engine endpoint, our authorizer, TLS and token configuration from `runtime.toml`, and the launcher's profiles.
+The engine endpoint, our authorizer, TLS and token configuration, and the launcher's profiles.
 
 ## Tests
 

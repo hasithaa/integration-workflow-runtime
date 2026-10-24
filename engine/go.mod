@@ -4,7 +4,11 @@ go 1.26.8
 
 toolchain go1.26.10
 
-require go.temporal.io/server v1.32.1
+require (
+	github.com/BurntSushi/toml v1.6.0
+	go.temporal.io/server v1.32.1
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	cel.dev/expr v0.25.2 // indirect
@@ -197,7 +201,6 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.35.4 // indirect
 	k8s.io/apimachinery v0.35.4 // indirect
 	k8s.io/client-go v0.35.4 // indirect

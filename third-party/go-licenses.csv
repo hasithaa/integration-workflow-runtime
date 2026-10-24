@@ -10,6 +10,7 @@ cloud.google.com/go/run,https://github.com/googleapis/google-cloud-go/blob/run/v
 cloud.google.com/go/storage,https://github.com/googleapis/google-cloud-go/blob/storage/v1.62.1/storage/LICENSE,Apache-2.0
 dario.cat/mergo,https://github.com/imdario/mergo/blob/v1.0.2/LICENSE,BSD-3-Clause
 filippo.io/edwards25519,https://github.com/FiloSottile/edwards25519/blob/v1.2.0/LICENSE,BSD-3-Clause
+github.com/BurntSushi/toml,https://github.com/BurntSushi/toml/blob/v1.6.0/COPYING,MIT
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp,https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/detectors/gcp/v1.33.0/detectors/gcp/LICENSE,Apache-2.0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric,https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/exporter/metric/v0.56.0/exporter/metric/LICENSE,Apache-2.0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping,https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/internal/resourcemapping/v0.56.0/internal/resourcemapping/LICENSE,Apache-2.0
