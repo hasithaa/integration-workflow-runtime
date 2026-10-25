@@ -47,6 +47,7 @@ authorizer is configured.
 make check          # build, vet, lint, gofmt, unit tests with the 75% coverage gate, licenses, vulnerabilities
 make test-smoke     # Ballerina smoke suite against the engine
 make test-full      # Ballerina full suite
+make test-docker    # all of the above and both suites on SQLite, PostgreSQL and MySQL, in Docker
 ```
 
 Set `BAL` or `TEMPORAL_CLI` if those commands are not on `PATH`, for example the `bal` bundled with WSO2

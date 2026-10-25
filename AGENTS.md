@@ -35,6 +35,7 @@ Decision records live in `docs/decisions/`; feature documentation in `docs/featu
 | `make tools` | Install the pinned golangci-lint, go-licenses, govulncheck and cyclonedx-gomod into `build/tools` (the targets that need them do this on first use) |
 | `make lint` / `make vet` / `make fmt-check` | golangci-lint v2.13.2, go vet, gofmt |
 | `make test-smoke` / `make test-full` | Ballerina suites against the engine (needs `bal` and the `temporal` CLI on `PATH`, or `BAL` / `TEMPORAL_CLI` set) |
+| `make test-docker` | The CI gates and both suites in Docker, PostgreSQL and MySQL included (`DOCKER_TARGET`, `DATABASES`) |
 | `make license-check` / `make vulncheck` | License gate and `govulncheck` |
 | `make sbom` | CycloneDX SBOM per binary in `build/sbom/` (included by `make dist`) |
 | `make check` | Every gate CI runs, except the Ballerina suites |

@@ -46,6 +46,24 @@ still stopped.
 | Smoke | A workflow runs activities and returns; a data event resumes a waiting workflow; a failing activity fails the workflow and its status says so; concurrent instances stay independent |
 | Full | Activity retries; workflow errors; durable timers; child workflows (start and wait, call); data events in either order; human tasks (approve, reject); execution info and activity history |
 
+### Everything in Docker
+
+`make test-docker` runs what GitHub Actions runs, on any machine with Docker and nothing else installed:
+`make check` and `make sbom`, then the smoke and full suites on SQLite, PostgreSQL 16 and MySQL 8.4.
+
+```sh
+make test-docker                                              # gates, then both suites on all three databases
+make test-docker DOCKER_TARGET=smoke DATABASES=postgresql     # one suite on one database
+make test-docker DOCKER_TARGET=gates                          # make check and make sbom only
+```
+
+`tests/docker/compose.yml` starts PostgreSQL and MySQL on 15432 and 13306 in one network namespace with the runner,
+so `tests/engine/runtime-*.toml` work unchanged. The runner image (`tests/docker/Dockerfile`) has the Go toolchain,
+the Temporal CLI and Ballerina on Java 25; the pinned Go tools are installed into a volume on first use. Each run works on a fresh copy of the source tree,
+uncommitted changes included, with empty databases; engine logs land in `build/docker/`. Go, tool and
+Ballerina caches are kept in Docker volumes between runs. If a run reports a damaged module cache (for example
+after the Docker disk filled up), reset them with `docker compose -f tests/docker/compose.yml down --volumes`.
+
 ### Adding a Ballerina test
 
 1. Add the workflow and activities to the suite's `workflows.bal`.
