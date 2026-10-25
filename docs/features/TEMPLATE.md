@@ -15,7 +15,11 @@ Keys, flags, ports or API endpoints, with defaults.
 
 ## Behavior
 
-How it works from the outside: normal flow, error cases, limits, security rules.
+How it works from the outside: normal flow, error cases, security rules.
+
+## Limits
+
+Sizes, counts, versions or settings that cannot change later; "None defined yet" when there are none.
 
 ## Not covered yet
 

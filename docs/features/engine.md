@@ -25,6 +25,12 @@ built from the pinned Temporal server module. Integrations' `ballerina/workflow`
   an unknown command.
 - Persistence plugins built in: PostgreSQL, MySQL, SQLite.
 
+## Limits
+
+- One Temporal server version per build (v1.32.1 today); upgrades move one minor version at a time.
+- The history shard count is fixed when the database is first set up and cannot change later.
+- SQL persistence only; SQLite is for development and tests.
+
 ## Not covered yet
 
 The engine endpoint, our authorizer, TLS and token configuration from `runtime.toml`, and the launcher's profiles.
