@@ -28,6 +28,8 @@ MODULES := $(shell go list -m -f '{{if .Main}}{{.Dir}}{{end}}' all | sed 's|^$(C
 
 GO_LICENSES := github.com/google/go-licenses/v2@v2.0.1
 GOVULNCHECK := golang.org/x/vuln/cmd/govulncheck@v1.9.0
+CYCLONEDX_GOMOD := github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.12.0
+BINARIES := workflow-engine workflow-engine-sql
 
 # Tools must run on the toolchain go.work selects, or they cannot read its standard library.
 TOOLCHAIN_ENV = GOROOT=$$(go env GOROOT) PATH=$$(go env GOROOT)/bin:$$PATH GOTOOLCHAIN=local
@@ -36,7 +38,7 @@ TOOLCHAIN_ENV = GOROOT=$$(go env GOROOT) PATH=$$(go env GOROOT)/bin:$$PATH GOTOO
 LICENSE_IGNORES = $(shell grep -v '^\s*\#' third-party/license-exceptions.txt | awk 'NF {print "--ignore " $$1}')
 
 .PHONY: build engine dist vet lint fmt-check test test-coverage test-race test-scripts licenses license-check \
-	vulncheck check test-smoke test-full install-hooks release clean
+	vulncheck sbom check test-smoke test-full install-hooks release clean
 
 build: engine
 
@@ -47,12 +49,21 @@ engine:
 		-ldflags "-s -w" -o ../$(OUT)/workflow-engine-sql$(EXE) ./cmd/workflow-engine-sql
 
 # One distribution directory and zip for GOOS/GOARCH: the layout every release archive uses.
-dist: engine
+dist: engine sbom
 	rm -rf dist/$(DIST_NAME) && mkdir -p dist/$(DIST_NAME)/bin dist/$(DIST_NAME)/conf
 	cp $(OUT)/workflow-engine$(EXE) $(OUT)/workflow-engine-sql$(EXE) dist/$(DIST_NAME)/bin/
+	cp -R $(OUT)/sbom dist/$(DIST_NAME)/
 	cp distribution/conf/runtime.toml dist/$(DIST_NAME)/conf/
 	cp -R LICENSE NOTICE third-party dist/$(DIST_NAME)/
 	cd dist && rm -f $(DIST_NAME).zip && zip -qr $(DIST_NAME).zip $(DIST_NAME)
+
+# CycloneDX SBOM per binary for GOOS/GOARCH: the modules and standard library linked in, with their licenses.
+sbom:
+	@mkdir -p $(OUT)/sbom
+	@GOOS= GOARCH= GOBIN="$(CURDIR)/$(OUT)/tools" go install $(CYCLONEDX_GOMOD)
+	@for b in $(BINARIES); do (cd engine && $(TOOLCHAIN_ENV) GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 \
+		"$(CURDIR)/$(OUT)/tools/cyclonedx-gomod" app -json -licenses -std -main cmd/$$b \
+		-output "$(CURDIR)/$(OUT)/sbom/$$b.cdx.json" .) || exit 1; done
 
 vet:
 	@for m in $(MODULES); do echo "Vetting $$m"; (cd $$m && go vet ./...) || exit 1; done

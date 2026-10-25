@@ -36,3 +36,6 @@ Temporal inside an Apache 2.0 product; Temporal's code keeps its MIT license.
    (`workflow-engine`, not `temporal-server`). Docs may say the runtime is built on the open-source Temporal server.
 7. **Images use a minimal base** (distroless static), which brings no OS userland of its own to license.
 8. **Changes to Temporal stay MIT,** so they can go upstream unchanged.
+9. **Every artifact carries an SBOM.** `make sbom` writes a CycloneDX 1.6 SBOM per binary (`sbom/*.cdx.json`)
+   for the target OS and architecture: every module and the Go standard library linked in, with versions, package
+   URLs and detected licenses. `make dist` puts it in the zip, and the Security workflow builds it on every pull request.

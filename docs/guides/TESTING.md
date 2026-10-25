@@ -9,6 +9,7 @@
 | Ballerina smoke suite | `tests/ballerina/smoke` | `make test-smoke`, every pull request | All pass |
 | Ballerina full suite | `tests/ballerina/full` | `make test-full`, on `main`, nightly, on demand | All pass |
 | License and vulnerability checks | `make license-check`, `make vulncheck` | Every pull request and daily | No findings |
+| SBOM | `make sbom` | Every pull request, daily, and in every distribution | Builds for both binaries |
 
 ## Go unit tests
 

@@ -33,6 +33,7 @@ Decision records live in `docs/decisions/`; feature documentation in `docs/featu
 | `make lint` / `make vet` / `make fmt-check` | golangci-lint v2.13.2, go vet, gofmt |
 | `make test-smoke` / `make test-full` | Ballerina suites against the engine (needs `bal` and the `temporal` CLI on `PATH`, or `BAL` / `TEMPORAL_CLI` set) |
 | `make license-check` / `make vulncheck` | License gate and `govulncheck` |
+| `make sbom` | CycloneDX SBOM per binary in `build/sbom/` (included by `make dist`) |
 | `make check` | Every gate CI runs, except the Ballerina suites |
 | `make dist` | Zip for one `GOOS`/`GOARCH` in `dist/` |
 | `make install-hooks` | Install the commit hook (subject format, license headers, gofmt, build, lint) |

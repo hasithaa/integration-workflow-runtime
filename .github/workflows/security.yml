@@ -28,6 +28,13 @@ jobs:
         run: make licenses && git diff --exit-code third-party/go-licenses.csv
       - name: No forbidden, restricted or unknown licenses
         run: make license-check
+      - name: SBOM builds
+        run: make sbom
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom-linux-amd64
+          path: build/sbom/*.cdx.json
+          if-no-files-found: error
 
   vulnerabilities:
     name: Vulnerability scan
