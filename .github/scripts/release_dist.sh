@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Cuts a release: `make release VERSION=v0.1.0 [REMOTE=wso2]` tags the current commit and pushes the tag, which
-# starts .github/workflows/release.yml. Without VERSION, the next version from resolve_next_version.sh is used.
+# Cuts a release: `make release RELEASE_VERSION=v0.1.0 [REMOTE=wso2]` tags the current commit and pushes the tag, which
+# starts .github/workflows/release.yml. Without RELEASE_VERSION, the next version from resolve_next_version.sh is used.
 
 set -euo pipefail
 
