@@ -16,8 +16,10 @@ Temporal's services in our own binary. See [0001](../docs/decisions/0001-tempora
 # From engine/: make engine puts both binaries in the repository-root build/ directory.
 ../build/workflow-engine start --config-file ../tests/engine/temporal-test.yaml --allow-no-auth
 
-# Create and install both Temporal schemas (the SQL files are embedded in the tool).
+# Create both databases, then install their schemas (the SQL files are embedded in the tool).
 SQL="../build/workflow-engine-sql --plugin postgres12 --ep db.example.com -p 5432 -u workflow"
+$SQL --db temporal create-database
+$SQL --db temporal_visibility create-database
 $SQL --db temporal setup-schema -v 0.0
 $SQL --db temporal update-schema --schema-name postgresql/v12/temporal
 $SQL --db temporal_visibility setup-schema -v 0.0
