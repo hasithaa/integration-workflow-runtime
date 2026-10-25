@@ -3,6 +3,7 @@
 | Path | What |
 |---|---|
 | `ballerina/run_suite.py` | Starts the engine, prepares the `default` namespace, runs a Ballerina suite, stops the engine |
+| `ballerina/test_run_suite.py` | Unit tests for the runner (`make test-scripts`) |
 | `ballerina/smoke` | Smoke suite: the basics every engine build must keep (every pull request) |
 | `ballerina/full` | Full suite: workflow features against the runtime (on `main`, nightly, on demand) |
 | `engine/temporal-test.yaml` | Engine configuration for the suites: in-memory SQLite, ports 17xxx |

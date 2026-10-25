@@ -80,6 +80,7 @@ test-race:
 
 test-scripts:
 	@cd .github/scripts && $(PYTHON) -m unittest discover -p 'test_*.py' -q
+	@cd tests/ballerina && $(PYTHON) -m unittest discover -p 'test_*.py' -q
 
 licenses:
 	cd engine && $(TOOLCHAIN_ENV) go run $(GO_LICENSES) report ./cmd/... > ../third-party/go-licenses.csv

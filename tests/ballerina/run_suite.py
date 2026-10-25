@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import signal
 import subprocess
 import sys
 import tempfile
@@ -82,7 +81,7 @@ def ensure_namespace(temporal: str, timeout: float) -> None:
 
 def stop(engine: subprocess.Popen) -> None:
     if engine.poll() is None:
-        engine.send_signal(signal.SIGTERM if os.name != "nt" else signal.CTRL_BREAK_EVENT)
+        engine.terminate()
         try:
             engine.wait(timeout=30)
         except subprocess.TimeoutExpired:

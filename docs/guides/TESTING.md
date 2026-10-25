@@ -5,7 +5,7 @@
 | Layer | Where | Runs | Gate |
 |---|---|---|---|
 | Go unit tests | Next to the code in each module | `make test`, `make test-coverage`, every pull request | 75% statement coverage outside `cmd/` wrappers |
-| Script tests | `.github/scripts/test_*.py` | `make test-scripts`, every pull request | All pass |
+| Script tests | `.github/scripts/test_*.py`, `tests/ballerina/test_*.py` | `make test-scripts`, every pull request | All pass |
 | Ballerina smoke suite | `tests/ballerina/smoke` | `make test-smoke`, every pull request | All pass |
 | Ballerina full suite | `tests/ballerina/full` | `make test-full`, on `main`, nightly, on demand | All pass |
 | License and vulnerability checks | `make license-check`, `make vulncheck` | Every pull request and daily | No findings |
