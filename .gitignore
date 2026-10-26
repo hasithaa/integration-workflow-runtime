@@ -43,5 +43,3 @@ tests/ballerina/*/target/
 tests/ballerina/*/Dependencies.toml
 !tests/ballerina/*/tests/Config.toml
 
-# Go workspace checksum
-go.work.sum
