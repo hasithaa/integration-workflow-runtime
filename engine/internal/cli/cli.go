@@ -93,6 +93,9 @@ func (c command) start(args []string) error {
 	var services serviceList
 	flags.Var(&services, "service", "service to start, repeatable: frontend, internal-frontend, history, matching, worker")
 	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 	if *configFile == "" {

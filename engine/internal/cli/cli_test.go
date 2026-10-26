@@ -106,6 +106,16 @@ func TestStartRequiresConfigFile(t *testing.T) {
 	}
 }
 
+func TestStartHelpIsNotAnError(t *testing.T) {
+	c, _, stderr := newTestCommand(nil, nil)
+	if code := c.run([]string{"start", "-h"}); code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !strings.Contains(stderr.String(), "-config-file") {
+		t.Fatalf("stderr = %q, want the start flags", stderr.String())
+	}
+}
+
 func TestStartRejectsUnknownFlag(t *testing.T) {
 	c, _, _ := newTestCommand(nil, nil)
 	if err := c.start([]string{"--no-such-flag"}); err == nil {
