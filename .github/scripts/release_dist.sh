@@ -47,6 +47,20 @@ if git rev-parse --quiet --verify "refs/tags/$version" >/dev/null; then
     exit 1
 fi
 
+remote_status=0
+git ls-remote --exit-code --refs "$remote" "refs/tags/$version" >/dev/null 2>&1 || remote_status=$?
+if [[ "$remote_status" -eq 0 ]]; then
+    echo "tag $version already exists on $remote" >&2
+    exit 1
+elif [[ "$remote_status" -ne 2 ]]; then
+    echo "unable to check tag $version on $remote" >&2
+    exit 1
+fi
+
 git tag -a "$version" -m "Release $version"
-git push "$remote" "refs/tags/$version"
+if ! git push "$remote" "refs/tags/$version"; then
+    git tag -d "$version" >/dev/null
+    echo "push to $remote failed; removed the local tag $version so the release can be retried" >&2
+    exit 1
+fi
 echo "Pushed $version to $remote; the Release workflow builds and publishes it."
