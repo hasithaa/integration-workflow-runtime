@@ -90,6 +90,18 @@ class ReleaseDistTest(unittest.TestCase):
         self.assertIn("removed the local tag v0.1.0", result.stderr)
         self.assertEqual("", git(self.repo, "tag", "--list", "v0.1.0"))
 
+    def test_refuses_a_feature_branch(self):
+        git(self.repo, "checkout", "-q", "-b", "feature/x")
+        result = self.release("v0.1.0", "origin")
+        self.assertEqual(1, result.returncode)
+        self.assertIn("refusing to release from branch feature/x", result.stderr)
+
+    def test_accepts_a_release_branch(self):
+        git(self.repo, "checkout", "-q", "-b", "release-0.1.x")
+        result = self.release("v0.1.1", "origin")
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("refs/tags/v0.1.1", self.remote_tags())
+
     def test_refuses_an_existing_local_tag(self):
         git(self.repo, "tag", "-a", "v0.1.0", "-m", "local")
         result = self.release("v0.1.0", "origin")

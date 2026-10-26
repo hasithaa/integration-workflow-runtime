@@ -35,6 +35,10 @@ if [[ -z "$branch" ]]; then
     echo "refusing to release from a detached HEAD" >&2
     exit 1
 fi
+if [[ "$branch" != main && ! "$branch" =~ ^release-[0-9]+\.[0-9]+\.x$ ]]; then
+    echo "refusing to release from branch $branch; use main or a release-X.Y.x branch" >&2
+    exit 1
+fi
 if [[ -z "$version" ]]; then
     version="v$(.github/scripts/resolve_next_version.sh "$branch")"
 fi

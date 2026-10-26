@@ -51,16 +51,16 @@ Integrator.
 
 - Temporal is bumped only in `engine/go.mod`, one minor version at a time.
 - A dependency with a fix Temporal has not released is raised with `go get <module>@<version>` in `engine/`.
-- After any change: `go mod tidy`, `make licenses`, commit `third-party/go-licenses.csv`, then `make license-check`
-  and `make vulncheck`.
+- After any change: `go mod tidy`, `make licenses`, commit `third-party/go-licenses.csv` and `go.work.sum`, then
+  `make license-check` and `make vulncheck`.
 
 ## Releases
 
 - Every push to `main` builds a nightly distribution for every platform (Build on push workflow).
-- `make release RELEASE_VERSION=v0.1.0 REMOTE=<upstream remote>` tags a clean `main` and pushes the tag; the
-  Release workflow builds and publishes the zips with checksums. Prereleases use a suffix (`v0.1.0-alpha.1`).
-  It refuses a tag that already exists locally or on the remote, and removes the local tag if the push fails, so
-  a release can be retried.
+- `make release RELEASE_VERSION=v0.1.0 REMOTE=<upstream remote>` tags a clean `main` or `release-X.Y.x` checkout
+  and pushes the tag; the Release workflow builds and publishes the zips with checksums. Prereleases use a suffix
+  (`v0.1.0-alpha.1`). It refuses any other branch and a tag that already exists locally or on the remote, and
+  removes the local tag if the push fails, so a release can be retried.
 - `make dist` builds the same zip locally for the current `GOOS`/`GOARCH`, with a CycloneDX SBOM per binary in
   `sbom/` (`make sbom` builds only the SBOMs).
 
