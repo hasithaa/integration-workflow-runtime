@@ -31,7 +31,7 @@ repo_root=$(git rev-parse --show-toplevel)
 if ! git rev-parse --quiet --verify MERGE_HEAD >/dev/null 2>&1 \
     && [[ "$subject" != "fixup! "* ]] \
     && [[ "$subject" != "squash! "* ]]; then
-    python3 "$repo_root/.github/scripts/validate_commits.py" "$subject"
+    "$repo_root/.github/scripts/check_commit_subject.sh" "$subject"
 fi
 
 missing_license=()
@@ -40,7 +40,7 @@ while IFS= read -r -d '' file; do
     if ! git show ":$file" | head -n 3 | grep -q 'Copyright (c) [0-9]\{4\}, WSO2 LLC. (http://www.wso2.com).'; then
         missing_license+=("$file")
     fi
-done < <(git diff --cached --name-only --diff-filter=A -z -- '*.go' '*.bal' '*.py' '*.sh')
+done < <(git diff --cached --name-only --diff-filter=A -z -- '*.go' '*.bal' '*.sh')
 
 if (( ${#missing_license[@]} > 0 )); then
     printf 'The following new files are missing the WSO2 license header:\n' >&2
@@ -48,15 +48,6 @@ if (( ${#missing_license[@]} > 0 )); then
     exit 1
 fi
 
+# lint installs the pinned golangci-lint into build/tools on first use.
 make fmt-check
-
-if ! command -v golangci-lint >/dev/null 2>&1; then
-    cat >&2 <<'MSG'
-golangci-lint is required to run commit checks.
-Install the version used by CI with:
-  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
-MSG
-    exit 1
-fi
-
 make -j4 build lint

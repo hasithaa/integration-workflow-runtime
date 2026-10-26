@@ -16,20 +16,29 @@ jobs:
     name: Validate PR title
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       pull-requests: read
     steps:
-      # The base branch, so the PR under review cannot alter the validator.
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - name: Validate the PR title
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          title=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.title')
-          python3 .github/scripts/validate_commits.py "$title"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            build
+            chore
+            ci
+            docs
+            style
+            refactor
+            perf
+            test
+            revert
+          requireScope: false
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject must start with a lowercase letter, got: "{subject}".
+            Example: "feat(engine): add the engine endpoint on port 7233"
 
   validate-commit-messages:
     name: Validate commit messages
@@ -38,7 +47,8 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v6
+      # The base branch, so the PR under review cannot alter the check.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Validate non-merge commit subjects
@@ -53,7 +63,7 @@ jobs:
           while IFS=$'\t' read -r sha encoded_subject; do
             [[ -n "$sha" ]] || continue
             subject=$(printf '%s' "$encoded_subject" | base64 --decode)
-            if ! python3 .github/scripts/validate_commits.py "$subject"; then
+            if ! .github/scripts/check_commit_subject.sh "$subject"; then
               printf 'Commit: %s\n\n' "$sha" >&2
               failed=1
             fi
