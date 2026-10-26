@@ -1,0 +1,82 @@
+name: Dependency validation
+
+# Every new direct Go dependency must be in WSO2's dependency registry for this repository's scope; see
+# https://github.com/wso2/engineering-governance/blob/main/dependency-registry/README.md
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/go.mod'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  DEPENDENCY_SCOPE: integrator
+
+jobs:
+  validate-go-dependencies:
+    name: Validate Go dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # The PR head is fetched as data only; nothing from it is executed.
+      - name: Fetch the PR head
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags origin "pull/$PR_NUMBER/head:pr-head"
+          if [[ "$(git rev-parse pr-head)" != "$HEAD_SHA" ]]; then
+            echo "::error::the PR head moved after the workflow was triggered; re-run it"
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: wso2/engineering-governance
+          ref: main
+          path: engineering-governance
+          persist-credentials: false
+      - name: Validate against the registry
+        id: validate
+        continue-on-error: true
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bash engineering-governance/scripts/validate-go-dependencies.sh "$BASE_SHA" "$HEAD_SHA" \
+            engineering-governance/dependency-registry/go.yaml "$DEPENDENCY_SCOPE"
+      - name: Report on the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          OUTCOME: ${{ steps.validate.outcome }}
+        run: |
+          {
+            echo "## Dependency validation"
+            echo
+            if [[ -s /tmp/all_deps_status.txt ]]; then
+              echo "| Status | Module | Version | Note |"
+              echo "|---|---|---|---|"
+              while IFS='|' read -r status module version reason; do
+                echo "| $status | \`$module\` | $version | $reason |"
+              done < /tmp/all_deps_status.txt
+            else
+              echo "No direct dependency changed."
+            fi
+            if [[ "$OUTCOME" == "failure" ]]; then
+              echo
+              echo "An unapproved dependency blocks this PR: remove it, or add it to the"
+              echo "[dependency registry](https://github.com/wso2/engineering-governance/blob/main/dependency-registry/go.yaml)"
+              echo "for the \`$DEPENDENCY_SCOPE\` scope."
+            fi
+          } > /tmp/comment.md
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+      - name: Fail on unapproved dependencies
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
