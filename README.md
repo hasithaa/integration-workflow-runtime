@@ -18,7 +18,8 @@ Status: early development. The engine builds and runs; the launcher, Manager and
 | `manager/` | The Manager: administration API, SSO sign-in, roles; serves the portals | Go |
 | `portals/` | Admin Portal and User Portal, static web apps served by the Manager | TypeScript |
 | `distribution/` | Zip and Docker assembly, configuration templates, start scripts | Shell, Docker |
-| `tests/` | Ballerina smoke and full suites run against the engine binary | Ballerina, Python |
+| `tests/` | Ballerina smoke and full suites run against the engine binary | Ballerina |
+| `tools/` | The repository's own tools: coverage gate, Ballerina suite runner, script tests | Go |
 | `third-party/` | License inventory and notices for everything we ship | |
 | `docs/decisions/` | Decision records | |
 

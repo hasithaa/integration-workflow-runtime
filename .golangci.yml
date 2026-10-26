@@ -25,10 +25,20 @@ linters:
       - path: _test\.go
         linters:
           - gosec
+      # The repository tools run the commands and open the files named on their command line; that is their job.
+      - path: internal/(balsuite|covercheck)/
+        linters:
+          - gosec
+        text: G204|G304
 
 formatters:
   enable:
     - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/wso2/integration-workflow-runtime
 
 issues:
   max-issues-per-linter: 0

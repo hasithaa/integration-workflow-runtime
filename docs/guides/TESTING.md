@@ -5,7 +5,7 @@
 | Layer | Where | Runs | Gate |
 |---|---|---|---|
 | Go unit tests | Next to the code in each module | `make test`, `make test-coverage`, every pull request | 75% statement coverage outside `cmd/` wrappers |
-| Script tests | `.github/scripts/test_*.py`, `tests/ballerina/test_*.py` | `make test-scripts`, every pull request | All pass |
+| Tool and script tests | `tools/internal/...` (the coverage gate, the suite runner, the shell scripts run for real) | `make test`, every pull request | All pass |
 | Ballerina smoke suite | `tests/ballerina/smoke` | `make test-smoke`, every pull request | All pass |
 | Ballerina full suite | `tests/ballerina/full` | `make test-full`, on `main`, nightly, on demand | All pass |
 | License and vulnerability checks | `make license-check`, `make vulncheck` | Every pull request and daily | No findings |
@@ -24,7 +24,7 @@
 The suites run real Ballerina programs on jBallerina against the engine binary built from the same commit. They
 are what proves the runtime runs `ballerina/workflow` integrations.
 
-`tests/ballerina/run_suite.py <smoke|full> --engine build/workflow-engine`:
+`go run ./tools/cmd/balsuite <smoke|full> --engine build/workflow-engine` (what `make test-smoke` and `make test-full` run):
 
 1. Starts `workflow-engine` on `tests/engine/temporal-test.yaml` with `--allow-no-auth`.
 2. Waits until `temporal operator cluster health` reports `SERVING` on `localhost:17233`.

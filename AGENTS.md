@@ -19,6 +19,7 @@ Read [docs/guides/ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) before changing 
 | Portals | `portals/` (planned) | Admin Portal and User Portal, static TypeScript apps served by the Manager |
 | Distribution | `distribution/` | Zip and Docker layout, `conf/runtime.toml` |
 | Tests | `tests/` | Ballerina smoke and full suites run against the engine binary |
+| Tools | `tools/` | Go module with the repository's own tools: the coverage gate, the Ballerina suite runner, script tests |
 | Third-party | `third-party/` | Generated license inventory and notices shipped with every artifact |
 
 Decision records live in `docs/decisions/`; feature documentation in `docs/features/`.
@@ -30,6 +31,7 @@ Decision records live in `docs/decisions/`; feature documentation in `docs/featu
 | `make build` | Build `build/workflow-engine` and `build/workflow-engine-sql` |
 | `make test` | Go unit tests in every `go.work` module |
 | `make test-coverage` | Unit tests plus the coverage gate (75% minimum, `cmd/` wrappers excluded) |
+| `make tools` | Install the pinned golangci-lint, go-licenses, govulncheck and cyclonedx-gomod into `build/tools` (the targets that need them do this on first use) |
 | `make lint` / `make vet` / `make fmt-check` | golangci-lint v2.13.2, go vet, gofmt |
 | `make test-smoke` / `make test-full` | Ballerina suites against the engine (needs `bal` and the `temporal` CLI on `PATH`, or `BAL` / `TEMPORAL_CLI` set) |
 | `make license-check` / `make vulncheck` | License gate and `govulncheck` |
@@ -64,11 +66,14 @@ These are requirements, not suggestions. A change that misses one is not done.
    version at a time; a fix upstream has not shipped goes through the fork and a `replace` line
    ([0001](docs/decisions/0001-temporal-packaging.md)).
 5. **Dependencies stay clean.** After any `go.mod` change run `make licenses` and commit the regenerated
-   `third-party/go-licenses.csv`; `make license-check` and `make vulncheck` must pass. A module whose license
-   needs a manual decision goes in `third-party/license-exceptions.txt` with the reason.
-6. **Every new source file starts with the WSO2 license header** (`Copyright (c) <year>, WSO2 LLC.
+   `third-party/go-licenses.csv` and `go.work.sum`; `make license-check` and `make vulncheck` must pass. A module
+   whose license needs a manual decision goes in `third-party/license-exceptions.txt` with the reason. A new
+   direct dependency must be in [WSO2's dependency registry](https://github.com/wso2/engineering-governance/blob/main/dependency-registry/go.yaml)
+   for the `integrator` scope; the Dependency validation workflow blocks the PR otherwise.
+6. **Actions are pinned by commit SHA** with the version in a comment; Dependabot proposes the bumps.
+7. **Every new source file starts with the WSO2 license header** (`Copyright (c) <year>, WSO2 LLC.
    (http://www.wso2.com).`, Apache 2.0). Files that adapt Temporal code also name Temporal's MIT copyright.
-7. **Commit messages and PR titles follow Conventional Commits** (below).
+8. **Commit messages and PR titles follow Conventional Commits** (below).
 
 ## Coding style
 
@@ -80,8 +85,9 @@ These are requirements, not suggestions. A change that misses one is not done.
 - Wrap errors with context (`fmt.Errorf("unable to load configuration: %w", err)`); error strings start lowercase.
 - Comments explain why, not what. Don't comment each line: extract a well-named function instead. Keep a comment
   to one line under 120 characters where possible; put longer rationale in the commit message or the docs.
-- Scripts are Python 3 (preferred) or shell; no JavaScript scripts. Python scripts get unit tests named
-  `test_*.py` next to them (`make test-scripts`).
+- Bash for CI glue (`.github/scripts/*.sh`, the hook), Go for anything with logic (`tools/`, run with
+  `go run ./tools/cmd/<tool>`); no Python or JavaScript scripts. A shell script with logic gets its tests in
+  `tools/internal/scripts/`, which runs the script for real.
 - Binary and product names never use "Temporal" (`workflow-engine`, not `temporal-server`).
 
 ## Tests
@@ -94,7 +100,7 @@ These are requirements, not suggestions. A change that misses one is not done.
 
 ### Ballerina suites
 
-- `tests/ballerina/run_suite.py <smoke|full> --engine build/workflow-engine` starts the engine on
+- `go run ./tools/cmd/balsuite <smoke|full> --engine build/workflow-engine` starts the engine on
   `tests/engine/temporal-test.yaml` (ports 17xxx, in-memory SQLite, `--allow-no-auth`), creates the `default`
   namespace and the `WorkflowKind` search attribute, runs `bal test` in the suite, and stops the engine.
 - Each suite is a Ballerina package: workflows and activities in `workflows.bal`, tests in `tests/*_test.bal`
@@ -117,7 +123,8 @@ These are requirements, not suggestions. A change that misses one is not done.
 ## Commit messages and PR titles
 
 Every commit subject and PR title follows [Conventional Commits](https://www.conventionalcommits.org/), checked by
-`.github/scripts/validate_commits.py` in the commit hook and the Lint PR workflow:
+`.github/scripts/check_commit_subject.sh` in the commit hook and the Lint PR workflow (which checks the PR
+title with `amannn/action-semantic-pull-request`):
 
 ```text
 <type>(<optional scope>): <description>
@@ -137,7 +144,8 @@ Examples: `feat(engine): add the engine endpoint on port 7233`, `fix(deps): rais
 
 - Every push to `main` builds a nightly distribution (`<next>-<YYYYMMDD>-<HHMM00>-<sha>`).
 - A release is a `vMAJOR.MINOR.PATCH[-PRERELEASE]` tag: `make release RELEASE_VERSION=v0.1.0 REMOTE=<upstream>`.
-  The Release workflow builds every platform and publishes the zips with checksums.
+  The Release workflow builds every platform and publishes the zips with checksums, each with a Sigstore bundle
+  (`cosign sign-blob`, keyless).
 - Point releases come from `release-X.Y.x` branches.
 
 ## Issues and pull requests

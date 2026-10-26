@@ -42,17 +42,19 @@ jobs:
             github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.suite) ||
             '["smoke", "full"]') }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: engine/go.mod
-          cache-dependency-path: engine/go.sum
+          cache-dependency-path: |
+            engine/go.sum
+            tools/go.sum
       - name: Build the engine
         run: make engine && ./build/workflow-engine version
       - name: Set up Ballerina (latest)
-        uses: ballerina-platform/setup-ballerina@v1.1.5
+        uses: ballerina-platform/setup-ballerina@585120e3f0e540bf127376ee6e75d39e8ce6aaa4 # v1.1.5
         with:
           version: latest
       - name: Install the Temporal CLI (test harness only)
@@ -68,10 +70,10 @@ jobs:
       - name: Run the ${{ matrix.suite }} suite
         env:
           ENGINE_LOG_DIR: build/logs
-        run: python3 tests/ballerina/run_suite.py ${{ matrix.suite }} --engine build/workflow-engine
+        run: go run ./tools/cmd/balsuite ${{ matrix.suite }} --engine build/workflow-engine
       - name: Upload engine and test logs
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.suite }}-logs
           path: |
