@@ -15,16 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import os
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().with_name("release_dist.sh")
+# Inside a git hook GIT_DIR and friends point at this repository; drop them so each command uses its cwd.
+REPO_VARIABLES = subprocess.run(["git", "rev-parse", "--local-env-vars"], check=True, capture_output=True,
+                                text=True).stdout.split()
+CLEAN_ENV = {name: value for name, value in os.environ.items() if name not in REPO_VARIABLES}
 
 
 def git(cwd: Path, *args: str) -> str:
-    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+    return subprocess.run(["git", *args], cwd=cwd, env=CLEAN_ENV, check=True, capture_output=True,
+                          text=True).stdout.strip()
 
 
 class ReleaseDistTest(unittest.TestCase):
@@ -48,7 +54,8 @@ class ReleaseDistTest(unittest.TestCase):
         self.temp.cleanup()
 
     def release(self, *args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(["bash", str(SCRIPT), *args], cwd=self.repo, capture_output=True, text=True)
+        return subprocess.run(["bash", str(SCRIPT), *args], cwd=self.repo, env=CLEAN_ENV, capture_output=True,
+                              text=True)
 
     def remote_tags(self) -> str:
         return git(self.repo, "ls-remote", "--tags", "origin")
