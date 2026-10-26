@@ -30,7 +30,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BurntSushi/toml"
+	"github.com/go-viper/mapstructure/v2"
+	"github.com/knadh/koanf/parsers/toml/v2"
+	"github.com/knadh/koanf/providers/confmap"
+	"github.com/knadh/koanf/v2"
 	"go.temporal.io/server/common/auth"
 	"go.temporal.io/server/common/cluster"
 	"go.temporal.io/server/common/config"
@@ -58,7 +61,6 @@ var (
 	pluginNames    = map[string]string{typePostgreSQL: "postgres12", typeMySQL: "mysql8", typeSQLite: "sqlite"}
 	defaultDBPorts = map[string]int{typePostgreSQL: 5432, typeMySQL: 3306}
 	logLevels      = []string{"debug", "info", "warn", "error"}
-	ownedTables    = []string{"engine", "database"}
 )
 
 type settings struct {
@@ -131,12 +133,19 @@ func Render(cfg *config.Config) ([]byte, error) {
 }
 
 func parse(data []byte, lookupEnv func(string) (string, bool)) (*config.Config, error) {
-	var s settings
-	meta, err := toml.Decode(string(data), &s)
+	values, err := toml.Parser().Unmarshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("invalid runtime configuration: %w", err)
 	}
-	if err := rejectUnknownKeys(meta); err != nil {
+	k := koanf.New(".")
+	if err := k.Load(confmap.Provider(values, ""), nil); err != nil {
+		return nil, fmt.Errorf("invalid runtime configuration: %w", err)
+	}
+	var s settings
+	if err := decodeTable(k, "engine", &s.Engine); err != nil {
+		return nil, err
+	}
+	if err := decodeTable(k, "database", &s.Database); err != nil {
 		return nil, err
 	}
 	s.applyDefaults()
@@ -154,18 +163,23 @@ func parse(data []byte, lookupEnv func(string) (string, bool)) (*config.Config, 
 	return cfg, nil
 }
 
-// rejectUnknownKeys catches typos in the tables this package owns, and leaves the others alone.
-func rejectUnknownKeys(meta toml.MetaData) error {
-	var unknown []string
-	for _, key := range meta.Undecoded() {
-		if len(key) > 0 && slices.Contains(ownedTables, key[0]) {
-			unknown = append(unknown, key.String())
-		}
+// decodeTable fills target from one of the tables this package owns, rejecting unknown keys (typos) in it; the
+// other tables belong to other components and are left alone.
+func decodeTable(k *koanf.Koanf, table string, target any) error {
+	var meta mapstructure.Metadata
+	conf := koanf.UnmarshalConf{Tag: "toml", DecoderConfig: &mapstructure.DecoderConfig{Metadata: &meta, Result: target}}
+	if err := k.UnmarshalWithConf(table, target, conf); err != nil {
+		return fmt.Errorf("invalid runtime configuration in [%s]: %w", table, err)
 	}
-	if len(unknown) > 0 {
-		return fmt.Errorf("unknown runtime configuration keys: %s", strings.Join(unknown, ", "))
+	if len(meta.Unused) == 0 {
+		return nil
 	}
-	return nil
+	unknown := make([]string, len(meta.Unused))
+	for i, key := range meta.Unused {
+		unknown[i] = table + "." + key
+	}
+	slices.Sort(unknown)
+	return fmt.Errorf("unknown runtime configuration keys: %s", strings.Join(unknown, ", "))
 }
 
 func (s *settings) applyDefaults() {
