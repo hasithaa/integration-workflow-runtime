@@ -27,6 +27,8 @@ the configuration defines one) in one binary built from the pinned Temporal serv
   authorizer on, history and worker reach the frontend only through the internal frontend.
 - Exits with code 1 and a message when the configuration cannot be loaded or the server cannot start; code 2 for
   an unknown command.
+- A `runtime.toml` always generates `services.internal-frontend`, so a start from it runs the internal frontend
+  with the default services and passes the internal frontend check.
 - Persistence plugins built in: PostgreSQL, MySQL, SQLite.
 
 ## Limits

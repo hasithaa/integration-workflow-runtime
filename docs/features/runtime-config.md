@@ -41,13 +41,16 @@ other, not both.
 | `broadcastAddress` | `bindAddress` | Address other nodes and clients use to reach this node; required when `bindAddress` is `0.0.0.0` |
 | `historyShards` | 512 (1 for SQLite) | Temporal history shards. **Cannot be changed after the first start** |
 | `logLevel` | `info` | `debug`, `info`, `warn` or `error` |
-| `[engine.ports]` `frontend`, `frontendHttp`, `history`, `matching`, `worker` | 7233, 7243, 7234, 7235, 7239 | Service ports; each service's membership port is its port minus 300 (6933, 6934, …) |
+| `[engine.ports]` `frontend`, `frontendHttp`, `internalFrontend`, `history`, `matching`, `worker` | 7233, 7243, 7236, 7234, 7235, 7239 | Service ports; each gRPC service's membership port is its port minus 300 (6933, 6936, …) |
 
 Other tables (`[runtime]`, `[users]`, the portals) belong to other components and are ignored here.
 
 ## Behavior
 
 - PostgreSQL maps to Temporal's `postgres12` plugin, MySQL to `mysql8` and SQLite to `sqlite`.
+- The generated configuration always has Temporal's internal frontend, and `start` runs it with the default
+  services: Temporal's own services (the worker, history) reach the frontend through it, which is what keeps them
+  working once an authorizer is on. The internal frontend is for in-process calls only; integrations use `frontend`.
 - Unknown keys in `[engine]` or `[database]` are rejected, so a typo fails at start instead of being ignored.
 - The engine refuses to start on invalid settings: an unknown database type, a missing host, invalid or duplicate
   ports (membership ports included), a SQLite database with both or neither of `path` and `inMemory`, the same
@@ -66,8 +69,8 @@ Other tables (`[runtime]`, `[users]`, the portals) belong to other components an
 
 ## Not covered yet
 
-Authorization and TLS for the engine's own endpoints, the internal frontend, profiles (which services a node
-runs), schema creation and upgrade on first start, Cassandra, and secure-vault secrets.
+Authorization and TLS for the engine's own endpoints, profiles (which services a node runs), schema creation and
+upgrade on first start, Cassandra, and secure-vault secrets.
 
 ## Tests
 

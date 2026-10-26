@@ -75,11 +75,12 @@ type engineSettings struct {
 }
 
 type portsSettings struct {
-	Frontend     int `toml:"frontend"`
-	FrontendHTTP int `toml:"frontendHttp"`
-	History      int `toml:"history"`
-	Matching     int `toml:"matching"`
-	Worker       int `toml:"worker"`
+	Frontend         int `toml:"frontend"`
+	FrontendHTTP     int `toml:"frontendHttp"`
+	InternalFrontend int `toml:"internalFrontend"`
+	History          int `toml:"history"`
+	Matching         int `toml:"matching"`
+	Worker           int `toml:"worker"`
 }
 
 type databaseSettings struct {
@@ -176,6 +177,7 @@ func (s *settings) applyDefaults() {
 	e.LogLevel = withDefault(e.LogLevel, "info")
 	e.Ports.Frontend = withDefault(e.Ports.Frontend, 7233)
 	e.Ports.FrontendHTTP = withDefault(e.Ports.FrontendHTTP, 7243)
+	e.Ports.InternalFrontend = withDefault(e.Ports.InternalFrontend, 7236)
 	e.Ports.History = withDefault(e.Ports.History, 7234)
 	e.Ports.Matching = withDefault(e.Ports.Matching, 7235)
 	e.Ports.Worker = withDefault(e.Ports.Worker, 7239)
@@ -244,8 +246,8 @@ func (p portsSettings) problems() []string {
 		name string
 		port int
 	}{
-		{"frontend", p.Frontend}, {"frontendHttp", p.FrontendHTTP}, {"history", p.History},
-		{"matching", p.Matching}, {"worker", p.Worker},
+		{"frontend", p.Frontend}, {"frontendHttp", p.FrontendHTTP}, {"internalFrontend", p.InternalFrontend},
+		{"history", p.History}, {"matching", p.Matching}, {"worker", p.Worker},
 	}
 	var problems []string
 	seen := map[int]string{}
@@ -313,11 +315,13 @@ func (s *settings) temporalConfig(password string) *config.Config {
 			},
 		},
 		DCRedirectionPolicy: config.DCRedirectionPolicy{Policy: "noop"},
+		// The internal frontend is how Temporal's own services reach the frontend once an authorizer is on.
 		Services: map[string]config.Service{
-			"frontend": {RPC: e.rpc(e.Ports.Frontend, e.Ports.FrontendHTTP)},
-			"history":  {RPC: e.rpc(e.Ports.History, 0)},
-			"matching": {RPC: e.rpc(e.Ports.Matching, 0)},
-			"worker":   {RPC: e.rpc(e.Ports.Worker, 0)},
+			"frontend":          {RPC: e.rpc(e.Ports.Frontend, e.Ports.FrontendHTTP)},
+			"internal-frontend": {RPC: e.rpc(e.Ports.InternalFrontend, 0)},
+			"history":           {RPC: e.rpc(e.Ports.History, 0)},
+			"matching":          {RPC: e.rpc(e.Ports.Matching, 0)},
+			"worker":            {RPC: e.rpc(e.Ports.Worker, 0)},
 		},
 	}
 }

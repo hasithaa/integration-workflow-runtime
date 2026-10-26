@@ -86,7 +86,8 @@ func TestDatabaseTypesMapToTemporalPlugins(t *testing.T) {
 
 func TestDefaultsFollowTemporalPorts(t *testing.T) {
 	cfg := mustParse(t, "[database]\ntype = \"sqlite\"\ninMemory = true\n")
-	want := map[string][2]int{"frontend": {7233, 6933}, "history": {7234, 6934}, "matching": {7235, 6935}, "worker": {7239, 6939}}
+	want := map[string][2]int{"frontend": {7233, 6933}, "internal-frontend": {7236, 6936}, "history": {7234, 6934},
+		"matching": {7235, 6935}, "worker": {7239, 6939}}
 	for name, ports := range want {
 		rpc := cfg.Services[name].RPC
 		if rpc.GRPCPort != ports[0] || rpc.MembershipPort != ports[1] || rpc.BindOnIP != "127.0.0.1" {
@@ -116,6 +117,7 @@ logLevel = "warn"
 [engine.ports]
 frontend = 17233
 frontendHttp = 17243
+internalFrontend = 17236
 history = 17234
 matching = 17235
 worker = 17239
@@ -126,6 +128,9 @@ host = "db"
 `)
 	if rpc := cfg.Services["frontend"].RPC; rpc.GRPCPort != 17233 || rpc.MembershipPort != 16933 || rpc.BindOnIP != "0.0.0.0" {
 		t.Errorf("frontend rpc = %+v", rpc)
+	}
+	if rpc := cfg.Services["internal-frontend"].RPC; rpc.GRPCPort != 17236 || rpc.MembershipPort != 16936 {
+		t.Errorf("internal-frontend rpc = %+v", rpc)
 	}
 	if got := cfg.ClusterMetadata.ClusterInformation[clusterName].RPCAddress; got != "10.0.0.5:17233" {
 		t.Errorf("rpcAddress = %q, want the broadcast address", got)

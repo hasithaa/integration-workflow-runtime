@@ -8,6 +8,7 @@ logLevel = "warn"
 [engine.ports]
 frontend = 17233
 frontendHttp = 17243
+internalFrontend = 17236
 history = 17234
 matching = 17235
 worker = 17239
