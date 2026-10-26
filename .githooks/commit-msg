@@ -48,11 +48,7 @@ if (( ${#missing_license[@]} > 0 )); then
     exit 1
 fi
 
-unformatted=$(gofmt -l -s engine)
-if [[ -n "$unformatted" ]]; then
-    printf 'Go formatting check failed:\n%s\n' "$unformatted" >&2
-    exit 1
-fi
+make fmt-check
 
 if ! command -v golangci-lint >/dev/null 2>&1; then
     cat >&2 <<'MSG'
