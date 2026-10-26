@@ -33,7 +33,8 @@ are what proves the runtime runs `ballerina/workflow` integrations.
 5. Stops the engine and, if anything failed, prints the end of the engine log (`ENGINE_LOG_DIR` keeps it).
 
 Every step is time-limited: each Temporal CLI call (15 s), engine start-up (`--startup-timeout`, 90 s) and
-`bal test` (`--test-timeout`, 30 min). A timeout fails the run, and the engine is still stopped.
+`bal test` (`--test-timeout`, 30 min). A timeout fails the run and kills `bal test` with its JVM, and the engine is
+still stopped.
 
 | Suite | Covers |
 |---|---|

@@ -15,8 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import os
 import subprocess
+import tempfile
+import time
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import run_suite
@@ -37,6 +41,32 @@ class RunQuietTest(unittest.TestCase):
             result = run_suite.run_quiet(["temporal"], timeout=5)
         self.assertEqual(124, result.returncode)
         self.assertIn("timed out after 5s", result.stderr)
+
+
+class RunBalTestTest(unittest.TestCase):
+    def test_returns_the_exit_code(self):
+        with tempfile.TemporaryDirectory() as suite:
+            script = Path(suite) / "bal"
+            script.write_text("#!/bin/sh\nexit 3\n")
+            script.chmod(0o755)
+            self.assertEqual(3, run_suite.run_bal_test(str(script), Path(suite), timeout=5))
+
+    @unittest.skipIf(os.name == "nt", "process groups")
+    def test_kills_the_process_group_on_timeout(self):
+        with tempfile.TemporaryDirectory() as suite:
+            marker = Path(suite) / "child.pid"
+            script = Path(suite) / "bal"
+            script.write_text(f"#!/bin/sh\nsleep 30 &\necho $! > {marker}\nwait\n")
+            script.chmod(0o755)
+            self.assertEqual(124, run_suite.run_bal_test(str(script), Path(suite), timeout=3))
+            child = int(marker.read_text())
+            for _ in range(50):  # the killed child is reaped by init, not instantly
+                try:
+                    os.kill(child, 0)
+                except ProcessLookupError:
+                    return
+                time.sleep(0.1)
+            self.fail(f"child {child} of the timed-out bal test is still running")
 
 
 class StopTest(unittest.TestCase):

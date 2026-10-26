@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -79,6 +80,22 @@ def ensure_namespace(temporal: str, timeout: float) -> None:
             raise RuntimeError(f"could not add search attribute {name}: {added.stderr.strip()}")
 
 
+def run_bal_test(bal: str, suite_dir: Path, timeout: float) -> int:
+    """Runs `bal test`; on timeout the whole process group dies, since `bal` leaves its JVM running otherwise."""
+    group = os.name != "nt"
+    test = subprocess.Popen([bal, "test"], cwd=suite_dir, start_new_session=group)
+    try:
+        return test.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        if group:
+            os.killpg(test.pid, signal.SIGKILL)
+        else:
+            test.kill()
+        test.wait()
+        print(f"error: bal test did not finish within {timeout:.0f}s", file=sys.stderr)
+        return 124
+
+
 def stop(engine: subprocess.Popen) -> None:
     if engine.poll() is None:
         engine.terminate()
@@ -107,7 +124,7 @@ def main(arguments: list[str]) -> int:
     args = parser.parse_args(arguments)
 
     suite_dir = ROOT / "tests" / "ballerina" / args.suite
-    log_dir = Path(os.environ.get("ENGINE_LOG_DIR", tempfile.mkdtemp(prefix="workflow-engine-")))
+    log_dir = Path(os.environ.get("ENGINE_LOG_DIR") or tempfile.mkdtemp(prefix="workflow-engine-"))
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f"engine-{args.suite}.log"
 
@@ -118,10 +135,7 @@ def main(arguments: list[str]) -> int:
         wait_until_serving(args.temporal, engine, args.startup_timeout)
         ensure_namespace(args.temporal, 30)
         print(f"workflow-engine SERVING on {ADDRESS}; running the {args.suite} suite", flush=True)
-        code = subprocess.run([args.bal, "test"], cwd=suite_dir, check=False, timeout=args.test_timeout).returncode
-    except subprocess.TimeoutExpired:
-        print(f"error: bal test did not finish within {args.test_timeout:.0f}s", file=sys.stderr)
-        code = 1
+        code = run_bal_test(args.bal, suite_dir, args.test_timeout)
     except RuntimeError as error:
         print(f"error: {error}", file=sys.stderr)
         code = 1
