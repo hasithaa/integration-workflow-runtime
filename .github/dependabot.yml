@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /engine
+    schedule:
+      interval: weekly
+    allow:
+      - dependency-type: direct
+      # Most x/* modules are indirect, but they carry most Go security fixes.
+      - dependency-name: "golang.org/x/*"
+        dependency-type: all
+    ignore:
+      # Temporal moves one minor version at a time, by hand (docs/decisions/0001-temporal-packaging.md).
+      - dependency-name: go.temporal.io/server
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    groups:
+      golang-x:
+        patterns: ["golang.org/x/*"]
+      patch:
+        patterns: ["*"]
+        update-types: [patch]
+  - package-ecosystem: gomod
+    directory: /tools
+    schedule:
+      interval: monthly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

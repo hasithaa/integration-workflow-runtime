@@ -1,0 +1,55 @@
+log:
+  stdout: true
+  level: error
+persistence:
+  defaultStore: default
+  visibilityStore: visibility
+  numHistoryShards: 1
+  datastores:
+    default:
+      sql:
+        pluginName: sqlite
+        databaseName: default
+        connectAddr: localhost
+        connectProtocol: tcp
+        connectAttributes:
+          mode: memory
+          cache: private
+    visibility:
+      sql:
+        pluginName: sqlite
+        databaseName: default
+        connectAddr: localhost
+        connectProtocol: tcp
+        connectAttributes:
+          mode: memory
+          cache: private
+global:
+  authorization:
+    authorizer: default
+    claimMapper: default
+  membership:
+    maxJoinDuration: 30s
+    broadcastAddress: 127.0.0.1
+services:
+  frontend:
+    rpc:
+      grpcPort: 17233
+      membershipPort: 16933
+      bindOnLocalHost: true
+  internal-frontend:
+    rpc:
+      grpcPort: 17236
+      membershipPort: 16936
+      bindOnLocalHost: true
+clusterMetadata:
+  enableGlobalNamespace: false
+  failoverVersionIncrement: 10
+  masterClusterName: active
+  currentClusterName: active
+  clusterInformation:
+    active:
+      enabled: true
+      initialFailoverVersion: 1
+      rpcName: frontend
+      rpcAddress: localhost:17233
