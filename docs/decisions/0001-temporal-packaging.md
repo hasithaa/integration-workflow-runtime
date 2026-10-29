@@ -1,6 +1,6 @@
 # 0001. Packaging and patching Temporal
 
-Status: proposed · 2026-10-16
+Status: accepted · 2026-10-29 (proposed 2026-10-16)
 
 ## Context
 
