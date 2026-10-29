@@ -31,6 +31,7 @@ Decision records live in `docs/decisions/`; feature documentation in `docs/featu
 | `make build` | Build `build/workflow-engine` and `build/workflow-engine-sql` |
 | `make test` | Go unit tests in every `go.work` module |
 | `make test-coverage` | Unit tests plus the coverage gate (75% minimum, `cmd/` wrappers excluded) |
+| `make test-race` | Unit tests with the race detector (CI runs it on every pull request) |
 | `make tools` | Install the pinned golangci-lint, go-licenses, govulncheck and cyclonedx-gomod into `build/tools` (the targets that need them do this on first use) |
 | `make lint` / `make vet` / `make fmt-check` | golangci-lint v2.13.2, go vet, gofmt |
 | `make test-smoke` / `make test-full` | Ballerina suites against the engine (needs `bal` and the `temporal` CLI on `PATH`, or `BAL` / `TEMPORAL_CLI` set) |

@@ -18,6 +18,7 @@
   server constructor as a field, so tests run the whole start path without a server).
 - `make test-coverage` writes profiles to `build/coverage/` and fails below 75%. `cmd/` packages are thin `main`
   wrappers and are excluded; the Ballerina suites exercise the real binaries.
+- `make test-race` runs the unit tests with the race detector; CI runs it on every pull request.
 
 ## Ballerina suites
 

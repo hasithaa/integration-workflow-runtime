@@ -35,6 +35,8 @@ jobs:
         run: make fmt-check
       - name: Unit tests with the 75% coverage gate
         run: make test-coverage
+      - name: Unit tests with the race detector
+        run: make test-race
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage
