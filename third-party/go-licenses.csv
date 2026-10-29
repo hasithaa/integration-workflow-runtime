@@ -17,8 +17,8 @@ github.com/Masterminds/goutils,https://github.com/Masterminds/goutils/blob/v1.1.
 github.com/Masterminds/semver/v3,https://github.com/Masterminds/semver/blob/v3.4.0/LICENSE.txt,MIT
 github.com/Masterminds/sprig/v3,https://github.com/Masterminds/sprig/blob/v3.3.0/LICENSE.txt,MIT
 github.com/apache/thrift/lib/go/thrift,https://github.com/apache/thrift/blob/v0.24.0/LICENSE,Apache-2.0
-github.com/apache/thrift/lib/go/thrift,https://github.com/apache/thrift/blob/v0.24.0/LICENSE,GNU-All-permissive-Copying-License
 github.com/apache/thrift/lib/go/thrift,https://github.com/apache/thrift/blob/v0.24.0/LICENSE,BSD-3-Clause
+github.com/apache/thrift/lib/go/thrift,https://github.com/apache/thrift/blob/v0.24.0/LICENSE,GNU-All-permissive-Copying-License
 github.com/aws/aws-sdk-go-v2,https://github.com/aws/aws-sdk-go-v2/blob/v1.43.4/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream,https://github.com/aws/aws-sdk-go-v2/blob/aws/protocol/eventstream/v1.7.16/aws/protocol/eventstream/LICENSE.txt,Apache-2.0
 github.com/aws/aws-sdk-go-v2/config,https://github.com/aws/aws-sdk-go-v2/blob/config/v1.32.16/config/LICENSE.txt,Apache-2.0
@@ -106,9 +106,9 @@ github.com/jackc/puddle/v2,https://github.com/jackc/puddle/blob/v2.2.2/LICENSE,M
 github.com/jmoiron/sqlx,https://github.com/jmoiron/sqlx/blob/v1.4.0/LICENSE,MIT
 github.com/josharian/intern,https://github.com/josharian/intern/blob/v1.0.0/license.md,MIT
 github.com/json-iterator/go,https://github.com/json-iterator/go/blob/v1.1.12/LICENSE,MIT
-github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.18.7/LICENSE,MIT
 github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.18.7/LICENSE,Apache-2.0
 github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.18.7/LICENSE,BSD-3-Clause
+github.com/klauspost/compress,https://github.com/klauspost/compress/blob/v1.18.7/LICENSE,MIT
 github.com/klauspost/compress/internal/snapref,https://github.com/klauspost/compress/blob/v1.18.7/internal/snapref/LICENSE,BSD-3-Clause
 github.com/klauspost/compress/zstd/internal/xxhash,https://github.com/klauspost/compress/blob/v1.18.7/zstd/internal/xxhash/LICENSE.txt,MIT
 github.com/lib/pq,https://github.com/lib/pq/blob/v1.12.3/LICENSE,MIT
@@ -132,6 +132,7 @@ github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil,htt
 github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.21.0/LICENSE,Apache-2.0
 github.com/prometheus/client_model/go,https://github.com/prometheus/client_model/blob/v0.6.2/LICENSE,Apache-2.0
 github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.62.0/LICENSE,Apache-2.0
+github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.20.1/LICENSE,Apache-2.0
 github.com/rcrowley/go-metrics,https://github.com/rcrowley/go-metrics/blob/65e299d6c5c9/LICENSE,BSD-2-Clause
 github.com/remyoudompheng/bigfft,https://github.com/remyoudompheng/bigfft/blob/24d4a6f8daec/LICENSE,BSD-3-Clause
 github.com/robfig/cron,https://github.com/robfig/cron/blob/v1.2.0/LICENSE,MIT
@@ -203,7 +204,9 @@ golang.org/x/exp/maps,https://cs.opensource.google/go/x/exp/+/c48552f4:LICENSE,B
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.60.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.36.0:LICENSE,BSD-3-Clause
 golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/v0.23.0:LICENSE,BSD-3-Clause
+golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.48.0:LICENSE,BSD-3-Clause
 golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.48.0:LICENSE,BSD-3-Clause
+golang.org/x/sys/windows,https://cs.opensource.google/go/x/sys/+/v0.48.0:LICENSE,BSD-3-Clause
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.46.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.42.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.15.0:LICENSE,BSD-3-Clause
@@ -236,6 +239,6 @@ sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/2d320260d730/LICEN
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/2d320260d730/LICENSE,BSD-3-Clause
 sigs.k8s.io/randfill,https://github.com/kubernetes-sigs/randfill/blob/v1.0.0/LICENSE,Apache-2.0
 sigs.k8s.io/structured-merge-diff/v6,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v6.4.0/LICENSE,Apache-2.0
-sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.6.0/LICENSE,MIT
 sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.6.0/LICENSE,Apache-2.0
 sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.6.0/LICENSE,BSD-3-Clause
+sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.6.0/LICENSE,MIT

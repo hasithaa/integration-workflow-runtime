@@ -22,6 +22,8 @@ OUT := build
 DIST_NAME := wso2-workflow-runtime-$(VERSION)-$(GOOS)-$(GOARCH)
 MIN_COVERAGE ?= 75
 BINARIES := workflow-engine workflow-engine-sql
+# The platforms build-dist.yml releases; keep the two lists in step.
+RELEASE_PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
 
 # Go modules of the go.work workspace, relative to the repository root.
 MODULES := $(shell go list -m -f '{{if .Main}}{{.Dir}}{{end}}' all | sed 's|^$(CURDIR)/||')
@@ -112,12 +114,17 @@ test-coverage:
 test-race:
 	@for m in $(MODULES); do (cd $$m && go test -race ./...) || exit 1; done
 
+# Each platform links a different set of packages, so the inventory and the check cover every release platform.
 licenses: $(GO_LICENSES)
-	cd engine && $(TOOLCHAIN_ENV) "$(GO_LICENSES)" report ./cmd/... > ../third-party/go-licenses.csv
+	@rm -f $(OUT)/licenses.csv; mkdir -p $(OUT)
+	@for p in $(RELEASE_PLATFORMS); do echo "Licenses for $$p"; (cd engine && $(TOOLCHAIN_ENV) GOOS=$${p%/*} \
+		GOARCH=$${p#*/} CGO_ENABLED=0 "$(GO_LICENSES)" report ./cmd/... >> "$(CURDIR)/$(OUT)/licenses.csv") || exit 1; done
+	@LC_ALL=C sort -u $(OUT)/licenses.csv > third-party/go-licenses.csv
 
 license-check: $(GO_LICENSES)
-	cd engine && $(TOOLCHAIN_ENV) "$(GO_LICENSES)" check ./cmd/... \
-		--disallowed_types=forbidden,restricted,unknown $(LICENSE_IGNORES)
+	@for p in $(RELEASE_PLATFORMS); do echo "License check for $$p"; (cd engine && $(TOOLCHAIN_ENV) GOOS=$${p%/*} \
+		GOARCH=$${p#*/} CGO_ENABLED=0 "$(GO_LICENSES)" check ./cmd/... \
+		--disallowed_types=forbidden,restricted,unknown $(LICENSE_IGNORES)) || exit 1; done
 
 vulncheck: $(GOVULNCHECK)
 	@for m in $(MODULES); do (cd $$m && $(TOOLCHAIN_ENV) "$(GOVULNCHECK)" ./...) || exit 1; done

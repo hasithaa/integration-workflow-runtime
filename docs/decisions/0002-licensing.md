@@ -26,8 +26,9 @@ Temporal inside an Apache 2.0 product; Temporal's code keeps its MIT license.
    `NOTICE` and `third-party/` (Temporal's license text, the dependency inventory and the licenses it lists).
 2. **Adapted source keeps its notice.** A file that follows Temporal's code (for example the engine's `main.go`)
    names Temporal's MIT copyright in its header beside ours.
-3. **The inventory is generated, not written.** `make licenses` regenerates `third-party/go-licenses.csv`; CI
-   fails when the committed file is out of date.
+3. **The inventory is generated, not written.** `make licenses` regenerates `third-party/go-licenses.csv` for
+   every release platform, since each links a different set of packages, so the file is the same on any machine;
+   CI fails when the committed file is out of date.
 4. **CI rejects incompatible licenses.** `make check` fails on any dependency whose license is forbidden,
    restricted (for example GPL, LGPL, AGPL) or unknown. A module whose license cannot be detected automatically
    is accepted only after a manual check, listed with the reason in `third-party/license-exceptions.txt`.
