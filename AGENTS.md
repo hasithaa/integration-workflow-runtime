@@ -145,7 +145,7 @@ Examples: `feat(engine): add the engine endpoint on port 7233`, `fix(deps): rais
 - Every push to `main` builds a nightly distribution (`<next>-<YYYYMMDD>-<HHMM00>-<sha>`).
 - A release is a `vMAJOR.MINOR.PATCH[-PRERELEASE]` tag: `make release RELEASE_VERSION=v0.1.0 REMOTE=<upstream>`.
   The Release workflow builds every platform and publishes the zips with checksums, each with a Sigstore bundle
-  (`cosign sign-blob`, keyless).
+  (`cosign sign-blob`, keyless). It refuses a tag whose commit is not on `main` or a `release-X.Y.x` branch.
 - Point releases come from `release-X.Y.x` branches.
 
 ## Issues and pull requests

@@ -64,7 +64,11 @@ Integrator.
   and pushes the tag; the Release workflow builds and publishes the zips with checksums and a Sigstore bundle
   (`<file>.sigstore.json`) per file, signed keyless by the workflow. Prereleases use a suffix
   (`v0.1.0-alpha.1`). It refuses any other branch and a tag that already exists locally or on the remote, and
-  removes the local tag if the push fails, so a release can be retried.
+  removes the local tag if the push fails, so a release can be retried. The Release workflow itself also refuses a
+  tag whose commit is not on `main` or a `release-X.Y.x` branch.
+- Verify a downloaded file with `cosign verify-blob --bundle <file>.sigstore.json --certificate-oidc-issuer
+  https://token.actions.githubusercontent.com --certificate-identity-regexp
+  '^https://github.com/wso2/integration-workflow-runtime/\.github/workflows/release\.yml@refs/tags/v' <file>`.
 - `make dist` builds the same zip locally for the current `GOOS`/`GOARCH`, with a CycloneDX SBOM per binary in
   `sbom/` (`make sbom` builds only the SBOMs).
 

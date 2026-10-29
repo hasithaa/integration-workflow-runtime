@@ -16,6 +16,21 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # release_dist.sh only tags main or a release-X.Y.x branch; a tag pushed by hand from elsewhere stops here.
+      - name: Check the tag is on main or a release branch
+        run: |
+          for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin \
+              | grep -E '^origin/(main|release-[0-9]+\.[0-9]+\.x)$'); do
+            if git merge-base --is-ancestor "$GITHUB_SHA" "$branch"; then
+              echo "tag $GITHUB_REF_NAME is on $branch"
+              exit 0
+            fi
+          done
+          echo "tag $GITHUB_REF_NAME is not on main or a release-X.Y.x branch" >&2
+          exit 1
       - name: Get the version from the tag
         id: version
         run: |
@@ -56,7 +71,8 @@ jobs:
         run: cd dist && sha256sum *.zip > SHA256SUMS
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       # Each zip and the checksum file get a Sigstore bundle; verify with
-      # cosign verify-blob --bundle <file>.sigstore.json --certificate-identity-regexp '^https://github.com/wso2/' \
+      # cosign verify-blob --bundle <file>.sigstore.json \
+      #   --certificate-identity-regexp '^https://github.com/wso2/integration-workflow-runtime/\.github/workflows/release\.yml@refs/tags/v' \
       #   --certificate-oidc-issuer https://token.actions.githubusercontent.com <file>
       - name: Sign the archives and checksums
         run: |
