@@ -1,4 +1,4 @@
-# Points ballerina/workflow at the engine started by tests/ballerina/run_suite.py.
+# Points ballerina/workflow at the engine started by the suite runner (go run ./tools/cmd/balsuite).
 [ballerina.workflow]
 mode = "LOCAL"
 url = "localhost:17233"
