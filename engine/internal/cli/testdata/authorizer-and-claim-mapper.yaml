@@ -37,6 +37,11 @@ services:
       grpcPort: 17233
       membershipPort: 16933
       bindOnLocalHost: true
+  internal-frontend:
+    rpc:
+      grpcPort: 17236
+      membershipPort: 16936
+      bindOnLocalHost: true
 clusterMetadata:
   enableGlobalNamespace: false
   failoverVersionIncrement: 10

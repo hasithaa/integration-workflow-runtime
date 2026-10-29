@@ -20,9 +20,11 @@ import (
 	"bytes"
 	"errors"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
+	"go.temporal.io/server/common/config"
 	"go.temporal.io/server/temporal"
 )
 
@@ -205,5 +207,28 @@ func TestStartAllowsMissingClaimMapperWhenNoAuthIsAllowed(t *testing.T) {
 	c, _, _ := newTestCommand(server, nil)
 	if err := c.start([]string{"--config-file", "testdata/authorizer-only.yaml", "--allow-no-auth"}); err != nil {
 		t.Fatalf("start with --allow-no-auth = %v, want nil", err)
+	}
+}
+
+func TestStartRefusesAuthorizerWithoutInternalFrontend(t *testing.T) {
+	server := &fakeServer{}
+	c, _, _ := newTestCommand(server, nil)
+	err := c.start([]string{"--config-file", "testdata/authorizer-without-internal-frontend.yaml"})
+	if err == nil || !strings.Contains(err.Error(), "an authorizer needs the internal frontend") {
+		t.Fatalf("start with an authorizer and no internal frontend = %v, want the internal frontend refusal", err)
+	}
+	if server.started {
+		t.Fatal("the server started without the internal frontend its authorizer needs")
+	}
+}
+
+func TestDefaultServicesAddTheInternalFrontendWhenConfigured(t *testing.T) {
+	plain := &config.Config{Services: map[string]config.Service{"frontend": {}}}
+	if got := defaultServices(plain); !slices.Equal(got, temporal.DefaultServices) {
+		t.Fatalf("defaultServices without an internal frontend = %v, want %v", got, temporal.DefaultServices)
+	}
+	withInternal := &config.Config{Services: map[string]config.Service{"frontend": {}, "internal-frontend": {}}}
+	if got := defaultServices(withInternal); !slices.Contains(got, "internal-frontend") || len(got) != len(temporal.DefaultServices)+1 {
+		t.Fatalf("defaultServices with an internal frontend = %v, want the defaults plus internal-frontend", got)
 	}
 }

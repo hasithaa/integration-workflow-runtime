@@ -4,8 +4,8 @@ Status: available · since 0.1.0 (in development)
 
 ## What it does
 
-`workflow-engine` runs Temporal's services (frontend, history, matching, worker, internal frontend) in one binary
-built from the pinned Temporal server module. Integrations' `ballerina/workflow` workers connect to its frontend.
+`workflow-engine` runs Temporal's services (frontend, history, matching and worker, plus the internal frontend when
+the configuration defines one) in one binary built from the pinned Temporal server module. Integrations' `ballerina/workflow` workers connect to its frontend.
 
 ## Configuration
 
@@ -13,7 +13,7 @@ built from the pinned Temporal server module. Integrations' `ballerina/workflow`
 |---|---|---|
 | `workflow-engine version` | | Prints the product version and the embedded Temporal server version |
 | `workflow-engine start --config-file <file>` | required | Temporal server configuration (YAML); the launcher will write it from `conf/runtime.toml` |
-| `--service <name>` (repeatable) | all services | `frontend`, `internal-frontend`, `history`, `matching`, `worker` |
+| `--service <name>` (repeatable) | `frontend`, `history`, `matching`, `worker`, plus `internal-frontend` when `services.internal-frontend` is configured | `frontend`, `internal-frontend`, `history`, `matching`, `worker` |
 | `--allow-no-auth` | off | Start without an authorizer; development and tests only |
 
 ## Behavior
@@ -21,6 +21,8 @@ built from the pinned Temporal server module. Integrations' `ballerina/workflow`
 - Refuses to start when the configuration sets no authorizer and `--allow-no-auth` is not given.
 - Refuses to start when an authorizer is set without a claim mapper: Temporal's no-op claim mapper gives every
   caller system-admin claims, so the authorizer would admit anyone.
+- Refuses to start when an authorizer is set and the configuration has no `services.internal-frontend`: with an
+  authorizer on, history and worker reach the frontend only through the internal frontend.
 - Exits with code 1 and a message when the configuration cannot be loaded or the server cannot start; code 2 for
   an unknown command.
 - Persistence plugins built in: PostgreSQL, MySQL, SQLite.
@@ -39,6 +41,6 @@ The engine endpoint, our authorizer, TLS and token configuration from `runtime.t
 
 | Test | Covers |
 |---|---|
-| `engine/internal/cli/cli_test.go` | Usage, version, flags, configuration errors, the authorizer and claim mapper refusals, the start path |
+| `engine/internal/cli/cli_test.go` | Usage, version, flags, configuration errors, the authorizer, claim mapper and internal frontend refusals, the default services, the start path |
 | `tests/ballerina/smoke` | A real engine runs workflows, activities, data events and failures |
 | `tests/ballerina/full` | Retries, timers, child workflows, human tasks, execution history |

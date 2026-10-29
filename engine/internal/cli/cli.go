@@ -35,6 +35,7 @@ import (
 	_ "go.temporal.io/server/common/persistence/sql/sqlplugin/mysql"
 	_ "go.temporal.io/server/common/persistence/sql/sqlplugin/postgresql"
 	_ "go.temporal.io/server/common/persistence/sql/sqlplugin/sqlite"
+	"go.temporal.io/server/common/primitives"
 	"go.temporal.io/server/temporal"
 )
 
@@ -101,13 +102,13 @@ func (c command) start(args []string) error {
 	if *configFile == "" {
 		return errors.New("--config-file is required")
 	}
-	if len(services) == 0 {
-		services = temporal.DefaultServices
-	}
 
 	cfg, err := config.Load(config.WithConfigFile(*configFile))
 	if err != nil {
 		return fmt.Errorf("unable to load configuration: %w", err)
+	}
+	if len(services) == 0 {
+		services = defaultServices(cfg)
 	}
 	logger := log.NewZapLogger(log.BuildZapLogger(cfg.Log))
 
@@ -122,6 +123,11 @@ func (c command) start(args []string) error {
 	// Without a claim mapper Temporal grants every caller system-admin claims, so the authorizer would admit anyone.
 	if strings.TrimSpace(cfg.Global.Authorization.ClaimMapper) == "" && !*allowNoAuth {
 		return errors.New("no claim mapper configured; an authorizer needs one (for example claimMapper: default)")
+	}
+	// With an authorizer on, history and worker reach the frontend only through the internal frontend; without it
+	// the engine exits about a minute after start.
+	if !authorization.IsNoopAuthorizer(authorizer) && !hasInternalFrontend(cfg) {
+		return errors.New("an authorizer needs the internal frontend; add services.internal-frontend to the configuration")
 	}
 	claimMapper, err := authorization.GetClaimMapperFromConfig(&cfg.Global.Authorization, logger)
 	if err != nil {
@@ -145,4 +151,18 @@ func (c command) start(args []string) error {
 		return fmt.Errorf("unable to create the server: %w", err)
 	}
 	return server.Start()
+}
+
+// defaultServices is Temporal's default set plus the internal frontend when the configuration defines one.
+func defaultServices(cfg *config.Config) []string {
+	services := append([]string{}, temporal.DefaultServices...)
+	if hasInternalFrontend(cfg) {
+		services = append(services, string(primitives.InternalFrontendService))
+	}
+	return services
+}
+
+func hasInternalFrontend(cfg *config.Config) bool {
+	_, ok := cfg.Services[string(primitives.InternalFrontendService)]
+	return ok
 }
