@@ -10,7 +10,8 @@
 | Temporal CLI (`temporal`) | Any recent release | The Ballerina suite runner |
 
 After cloning: `make install-hooks`. The pinned golangci-lint, go-licenses, govulncheck and cyclonedx-gomod are
-installed into `build/tools` the first time a target needs them (`make tools` installs all four).
+installed into `build/tools` the first time a target needs them (`make tools` installs all four); each binary is
+named after its version, so a version bump in the `Makefile` installs the new one on the next run.
 
 ## Layout
 

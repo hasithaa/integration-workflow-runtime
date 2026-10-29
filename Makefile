@@ -34,21 +34,20 @@ LICENSE_IGNORES = $(shell grep -v '^\s*\#' third-party/license-exceptions.txt | 
 
 ## Tools: installed once per version into $(TOOL_BIN), as a versioned binary plus an unversioned symlink.
 TOOL_BIN := $(CURDIR)/$(OUT)/tools
-GOLANGCI_LINT := $(TOOL_BIN)/golangci-lint
-GO_LICENSES := $(TOOL_BIN)/go-licenses
-GOVULNCHECK := $(TOOL_BIN)/govulncheck
-CYCLONEDX_GOMOD := $(TOOL_BIN)/cyclonedx-gomod
 GOLANGCI_LINT_VERSION ?= v2.13.2
 GO_LICENSES_VERSION ?= v2.0.1
 GOVULNCHECK_VERSION ?= v1.9.0
 CYCLONEDX_GOMOD_VERSION ?= v1.12.0
+# Each path names its version, so after a version bump the target is missing and make installs the new one.
+GOLANGCI_LINT := $(TOOL_BIN)/golangci-lint-$(GOLANGCI_LINT_VERSION)
+GO_LICENSES := $(TOOL_BIN)/go-licenses-$(GO_LICENSES_VERSION)
+GOVULNCHECK := $(TOOL_BIN)/govulncheck-$(GOVULNCHECK_VERSION)
+CYCLONEDX_GOMOD := $(TOOL_BIN)/cyclonedx-gomod-$(CYCLONEDX_GOMOD_VERSION)
 
-# go_install_tool installs $(2)@$(3) as $(1)-$(3) and links $(1) to it, if that version is not there yet.
+# go_install_tool installs $(2)@$(3) as $(1) and points the unversioned name at it.
 define go_install_tool
-@[ -f "$(1)-$(3)" ] || { \
-	set -e; mkdir -p "$(TOOL_BIN)"; echo "Installing $(2)@$(3)"; rm -f "$(1)"; \
-	GOOS= GOARCH= GOBIN="$(TOOL_BIN)" go install "$(2)@$(3)"; mv "$(1)" "$(1)-$(3)"; } ;\
-ln -sf "$(1)-$(3)" "$(1)"
+@set -e; mkdir -p "$(TOOL_BIN)"; echo "Installing $(2)@$(3)"; link="$(patsubst %-$(3),%,$(1))"; rm -f "$$link"; \
+GOOS= GOARCH= GOBIN="$(TOOL_BIN)" go install "$(2)@$(3)"; mv "$$link" "$(1)"; ln -sf "$(notdir $(1))" "$$link"
 endef
 
 .PHONY: build engine dist sbom tools vet lint fmt-check test test-coverage test-race licenses license-check \
