@@ -40,25 +40,24 @@ const (
 	cliTimeout      = 15 * time.Second
 	logTailLines    = 80
 	exitCodeTimeout = 124
+	// stopTimeout is how long a terminated engine gets before it is killed.
+	stopTimeout = 30 * time.Second
+	// namespaceTimeout bounds the wait for the created namespace to become available.
+	namespaceTimeout = 30 * time.Second
 )
-
-// stopTimeout is how long a terminated engine gets before it is killed; a variable so tests can shorten it.
-var stopTimeout = 30 * time.Second
 
 // searchAttributes are the attributes ballerina/workflow tags every instance with; a fresh namespace lacks them.
 var searchAttributes = map[string]string{"WorkflowKind": "Keyword"}
 
 // Options describes one run.
 type Options struct {
-	Suite      string   // smoke or full
-	Root       string   // repository root; the suite is tests/ballerina/<Suite>
-	Engine     string   // workflow-engine binary
-	EngineArgs []string // arguments after `start`
-	Bal        string   // bal command
-	Temporal   string   // temporal CLI
-	LogDir     string   // engine log directory; a temporary one when empty
-	// Prepare runs after the engine binary is known and before it starts, for example to create SQL schemas.
-	Prepare        func(ctx context.Context) error
+	Suite          string   // smoke or full
+	Root           string   // repository root; the suite is tests/ballerina/<Suite>
+	Engine         string   // workflow-engine binary
+	EngineArgs     []string // arguments after `start`
+	Bal            string   // bal command
+	Temporal       string   // temporal CLI
+	LogDir         string   // engine log directory; a temporary one, removed after the run, when empty
 	StartupTimeout time.Duration
 	TestTimeout    time.Duration
 }
@@ -108,19 +107,20 @@ func runQuiet(ctx context.Context, timeout time.Duration, name string, args ...s
 
 // engineProcess is the started engine with its exit watched once.
 type engineProcess struct {
-	cmd    *exec.Cmd
-	exited chan error
-	done   bool
-	err    error
+	cmd         *exec.Cmd
+	exited      chan error
+	done        bool
+	err         error
+	stopTimeout time.Duration // how long stop waits after terminating before it kills
 }
 
-func startEngine(engine string, args []string, log io.Writer) (*engineProcess, error) {
+func startEngine(engine string, args []string, log io.Writer, stopTimeout time.Duration) (*engineProcess, error) {
 	cmd := exec.Command(engine, append([]string{"start"}, args...)...)
 	cmd.Stdout, cmd.Stderr = log, log
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("unable to start %s: %w", engine, err)
 	}
-	p := &engineProcess{cmd: cmd, exited: make(chan error, 1)}
+	p := &engineProcess{cmd: cmd, exited: make(chan error, 1), stopTimeout: stopTimeout}
 	go func() { p.exited <- cmd.Wait() }()
 	return p, nil
 }
@@ -145,7 +145,7 @@ func (p *engineProcess) stop() {
 	_ = terminate(p.cmd)
 	select {
 	case p.err = <-p.exited:
-	case <-time.After(stopTimeout):
+	case <-time.After(p.stopTimeout):
 		_ = p.cmd.Process.Kill()
 		p.err = <-p.exited
 	}
@@ -246,6 +246,7 @@ func Run(ctx context.Context, o Options, stdout, stderr io.Writer) int {
 			return 1
 		}
 		logDir = dir
+		defer func() { _ = os.RemoveAll(dir) }()
 	}
 	if err := os.MkdirAll(logDir, 0o750); err != nil {
 		_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
@@ -259,13 +260,7 @@ func Run(ctx context.Context, o Options, stdout, stderr io.Writer) int {
 	}
 	defer func() { _ = logFile.Close() }()
 
-	if o.Prepare != nil {
-		if err := o.Prepare(ctx); err != nil {
-			_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
-			return 1
-		}
-	}
-	engine, err := startEngine(o.Engine, o.EngineArgs, logFile)
+	engine, err := startEngine(o.Engine, o.EngineArgs, logFile, stopTimeout)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
@@ -275,7 +270,7 @@ func Run(ctx context.Context, o Options, stdout, stderr io.Writer) int {
 			_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
 			return 1
 		}
-		if err := ensureNamespace(ctx, o.Temporal, stopTimeout); err != nil {
+		if err := ensureNamespace(ctx, o.Temporal, namespaceTimeout); err != nil {
 			_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
 			return 1
 		}

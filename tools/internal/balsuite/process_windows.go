@@ -18,11 +18,20 @@
 
 package balsuite
 
-import "os/exec"
+import (
+	"os/exec"
+	"strconv"
+)
 
-// Windows has no process groups to signal; the processes are killed directly.
+// Windows has no process groups to signal; taskkill /T ends the process tree instead.
 func setProcessGroup(*exec.Cmd) {}
 
-func killProcessGroup(cmd *exec.Cmd) error { return cmd.Process.Kill() }
+// killProcessGroup kills cmd and its children, so `bal test` does not leave its JVM running.
+func killProcessGroup(cmd *exec.Cmd) error {
+	if err := exec.Command("taskkill", "/T", "/F", "/PID", strconv.Itoa(cmd.Process.Pid)).Run(); err != nil {
+		return cmd.Process.Kill()
+	}
+	return nil
+}
 
 func terminate(cmd *exec.Cmd) error { return cmd.Process.Kill() }

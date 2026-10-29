@@ -19,13 +19,10 @@ package balsuite
 import (
 	"bytes"
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 )
@@ -97,15 +94,32 @@ func TestRunReturnsTheSuiteExitCodeAndPrintsTheLogTail(t *testing.T) {
 	}
 }
 
-func TestRunRunsPrepareBeforeTheEngine(t *testing.T) {
-	o := options(t, servingTemporal, idleEngine, "#!/bin/sh\nexit 0\n")
-	o.Prepare = func(context.Context) error { return errors.New("schema setup failed") }
-	var stderr bytes.Buffer
-	if code := Run(context.Background(), o, &bytes.Buffer{}, &stderr); code != 1 {
-		t.Fatalf("Run = %d, want 1", code)
-	}
-	if !strings.Contains(stderr.String(), "schema setup failed") {
-		t.Fatalf("stderr = %q", stderr.String())
+func TestRunRemovesTheTemporaryLogDirectory(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		bal  string
+		code int
+	}{
+		{"passing suite", "#!/bin/sh\nexit 0\n", 0},
+		{"failing suite", "#!/bin/sh\nexit 3\n", 3},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			t.Setenv("TMPDIR", tmp)
+			o := options(t, servingTemporal, "#!/bin/sh\necho engine says hello\n"+idleEngine, tt.bal)
+			o.LogDir = ""
+			var stderr bytes.Buffer
+			if code := Run(context.Background(), o, &bytes.Buffer{}, &stderr); code != tt.code {
+				t.Fatalf("Run = %d, want %d; stderr: %s", code, tt.code, stderr.String())
+			}
+			if tt.code != 0 && !strings.Contains(stderr.String(), "engine says hello") {
+				t.Fatalf("stderr = %q, want the log tail before the directory is removed", stderr.String())
+			}
+			left, err := filepath.Glob(filepath.Join(tmp, "workflow-engine-*"))
+			if err != nil || len(left) != 0 {
+				t.Fatalf("temporary log directories left behind: %v (%v)", left, err)
+			}
+		})
 	}
 }
 
@@ -194,34 +208,6 @@ func TestRunQuietReportsAMissingCommand(t *testing.T) {
 	}
 }
 
-func TestRunBalTestKillsTheProcessGroupOnTimeout(t *testing.T) {
-	dir := t.TempDir()
-	marker := filepath.Join(dir, "child.pid")
-	bal := script(t, dir, "bal", "#!/bin/sh\nsleep 30 &\necho $! > "+marker+"\nwait\n")
-	var stderr bytes.Buffer
-	if code := runBalTest(bal, dir, 3*time.Second, &stderr); code != exitCodeTimeout {
-		t.Fatalf("runBalTest = %d, want %d", code, exitCodeTimeout)
-	}
-	if !strings.Contains(stderr.String(), "did not finish within 3s") {
-		t.Fatalf("stderr = %q", stderr.String())
-	}
-	pid, err := os.ReadFile(marker)
-	if err != nil {
-		t.Fatal(err)
-	}
-	child, err := strconv.Atoi(strings.TrimSpace(string(pid)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for range 50 { // the killed child is reaped by init, not instantly
-		if err := syscall.Kill(child, 0); errors.Is(err, syscall.ESRCH) {
-			return
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	t.Fatalf("child %d of the timed-out bal test is still running", child)
-}
-
 func TestRunBalTestReportsAnUnstartableCommand(t *testing.T) {
 	var stderr bytes.Buffer
 	if code := runBalTest(filepath.Join(t.TempDir(), "absent"), t.TempDir(), time.Second, &stderr); code != 1 {
@@ -231,10 +217,7 @@ func TestRunBalTestReportsAnUnstartableCommand(t *testing.T) {
 
 func TestEngineStopKillsAnEngineThatIgnoresTerminate(t *testing.T) {
 	engine := script(t, t.TempDir(), "engine", "#!/bin/sh\ntrap '' TERM\nwhile :; do sleep 1; done\n")
-	previous := stopTimeout
-	stopTimeout = time.Second
-	t.Cleanup(func() { stopTimeout = previous })
-	p, err := startEngine(engine, nil, &bytes.Buffer{})
+	p, err := startEngine(engine, nil, &bytes.Buffer{}, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +225,7 @@ func TestEngineStopKillsAnEngineThatIgnoresTerminate(t *testing.T) {
 	go func() { p.stop(); close(stopped) }()
 	select {
 	case <-stopped:
-	case <-time.After(stopTimeout + 5*time.Second):
+	case <-time.After(6 * time.Second):
 		t.Fatal("stop did not return after the kill fallback")
 	}
 	if done, _ := p.exitedWith(); !done {

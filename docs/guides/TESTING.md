@@ -30,7 +30,8 @@ are what proves the runtime runs `ballerina/workflow` integrations.
 2. Waits until `temporal operator cluster health` reports `SERVING` on `localhost:17233`.
 3. Creates the `default` namespace and the `WorkflowKind` search attribute `ballerina/workflow` uses.
 4. Runs `bal test` in the suite directory.
-5. Stops the engine and, if anything failed, prints the end of the engine log (`ENGINE_LOG_DIR` keeps it).
+5. Stops the engine and, if anything failed, prints the end of the engine log. The log is written to a temporary
+   directory that is removed after the run; set `ENGINE_LOG_DIR` to keep it.
 
 Every step is time-limited: each Temporal CLI call (15 s), engine start-up (`--startup-timeout`, 90 s) and
 `bal test` (`--test-timeout`, 30 min). A timeout fails the run and kills `bal test` with its JVM, and the engine is
