@@ -8,5 +8,5 @@
 | `engine/runtime-<database>.toml` | runtime.toml for the suites (ports 17xxx): in-memory SQLite, PostgreSQL on 15432, MySQL on 13306 |
 
 The runner that starts the engine, prepares the `default` namespace, runs a suite and stops the engine is
-`tools/cmd/balsuite` (`make test-smoke`, `make test-full`). See [docs/guides/TESTING.md](../docs/guides/TESTING.md). Contract tests (the Manager against an integration's own
+`tools/cmd/balsuite` (`make test-smoke`, `make test-full`). See [docs/guides/TESTING.md](../docs/guides/TESTING.md). Contract tests (the API server against an integration's own
 Workflow Management API) and upgrade tests join here as those components arrive.

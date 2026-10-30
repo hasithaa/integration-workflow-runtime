@@ -1,6 +1,6 @@
 # portals
 
-Static web apps, built here and served by the Manager.
+Static web apps, built here and served by the API server.
 
 | Path | App |
 |---|---|

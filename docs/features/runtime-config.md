@@ -44,7 +44,8 @@ other, not both.
 | `logLevel` | `info` | `debug`, `info`, `warn` or `error` |
 | `[engine.ports]` `frontend`, `frontendHttp`, `internalFrontend`, `history`, `matching`, `worker` | 7233, 7243, 7236, 7234, 7235, 7239 | Service ports; each gRPC service's membership port is its port minus 300 (6933, 6936, …) |
 
-Other tables (`[runtime]`, `[users]`, the portals) belong to other components and are ignored here.
+Other tables (`[runtime]`, `[users]`, the portals) belong to other components and are ignored here. `[api]` and
+`apiDatabaseName` are the [API server](api-server.md)'s; it reads the same file.
 
 ## Behavior
 

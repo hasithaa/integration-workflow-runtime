@@ -11,12 +11,12 @@ portals, packaging and updates.
 | Component | What it is | Status |
 |---|---|---|
 | Engine | Temporal's four services (frontend, history, matching, worker) in our Go binary, `workflow-engine` | Builds and runs |
-| Engine endpoint | The integrations' one port (7233): gRPC to Temporal's frontend, `/runtime/...` HTTPS to the Manager | Planned |
+| Engine endpoint | The integrations' one port (7233): gRPC to Temporal's frontend, `/runtime/...` HTTPS to the API server | Planned |
 | Launcher | Starts the components of a profile, writes Temporal's configuration from `conf/runtime.toml`, supervises and restarts | Planned |
-| Manager | Go service: engine administration, the Workflow Management API, SSO sign-in, roles; serves the portals | Planned |
+| API server | Go service, `workflow-api`: engine administration, the Workflow Management API, namespace and token APIs, SSO sign-in, roles; serves the portals | Skeleton: configuration, its database, health endpoints |
 | Admin Portal | UI for administrators and operators, at `/admin` | Planned |
 | User Portal | Business users' human-task inbox, at `/portal` | Planned |
-| Runtime DB | The Manager's data: integrations, definitions and versions, users, roles, audit | Planned |
+| API server's database | The API server's data: integrations, definitions and versions, users, roles, audit | Created and migrated on start; no product tables yet |
 | Temporal persistence | Temporal's data: workflow state, history, task queues, visibility | Configured by the launcher |
 
 ## How the pieces connect
@@ -27,9 +27,9 @@ portals, packaging and updates.
 2. **Integrations register** (later, with a workflow module release): at startup the module sends its workflow
    definitions to `/runtime/register` on the same host and port, with the same token. On plain Temporal the call
    fails and the module carries on. Liveness comes from Temporal's task-queue pollers, so there is no heartbeat.
-3. **People use the portals**, which the Manager serves on the same HTTPS port as its API.
-4. **The Manager drives Temporal** through the Temporal Go SDK, via the frontend.
-5. **Each side keeps its own database**: the Manager's Runtime DB, and Temporal persistence.
+3. **People use the portals**, which the API server serves on the same HTTPS port as its API.
+4. **The API server drives Temporal** through the Temporal Go SDK, via the frontend.
+5. **Each side keeps its own database**: the API server's database, and Temporal persistence.
 
 Inside Temporal the four services are separate microservices started from one binary. They find each other
 through Temporal's membership ring and talk over internal gRPC. Temporal's worker service runs Temporal's own
@@ -44,9 +44,20 @@ housekeeping; integration workers never connect to it.
   public server options and plugin registration. See [0001](../decisions/0001-temporal-packaging.md).
 - **Secure by default.** The engine refuses to start with no authorizer, or with an authorizer but no claim mapper
   (Temporal's no-op claim mapper grants every caller system-admin claims), unless `--allow-no-auth` is given, which
-  is for development and tests only. Production uses Temporal's JWT authorizer trusting the Manager's keys, over
+  is for development and tests only. Production uses Temporal's JWT authorizer trusting the API server's keys, over
   TLS.
 - `workflow-engine-sql` creates and upgrades Temporal's schema, built from the same Temporal version.
+
+## API server
+
+- `api/cmd/workflow-api` is a thin `main`; the logic is in `api/internal/...`. It is its own Go module, so it does
+  not link Temporal's server, only the Temporal Go SDK and the SQL drivers the engine already ships.
+- It reads `conf/runtime.toml`: its `[api]` table, the shared `[database]` connection with its own database name
+  (`apiDatabaseName`), and the frontend's address from `[engine]`.
+- On start it creates its database when missing and applies the migrations embedded in the binary, under a
+  database lock so nodes starting together migrate once.
+- It reaches the engine through the frontend, connecting lazily, and serves `/healthz` and `/readyz`. Plain HTTP
+  for now; TLS comes with the APIs. See [the API server feature](../features/api-server.md).
 
 ## Profiles
 
@@ -57,20 +68,21 @@ One distribution; each node runs the profiles it is given (launcher, planned).
 | `all` (default) | Everything on one machine |
 | `engine` | The four Temporal services and the engine endpoint |
 | `frontend`, `history`, `matching`, `worker` | One Temporal service (`frontend` includes the engine endpoint) |
-| `manager` | The Manager, with the portals it serves |
+| `api` | The API server, with the portals it serves |
 
 ## Data
 
 | Database | Holds | Engines |
 |---|---|---|
-| Runtime DB | Integrations, definitions and versions, users, roles, token records, audit | PostgreSQL, MySQL; SQLite for trying out |
+| API server's database (`workflow_api`) | Integrations, definitions and versions, users, roles, token records, audit | PostgreSQL, MySQL; SQLite for trying out |
 | Temporal persistence | Workflow state and history, task queues, visibility; namespace retention applies here | PostgreSQL, MySQL, Cassandra; SQLite for trying out |
 
-Both can share one database server, in separate schemas.
+Following Temporal's model, both use the one `[database]` connection, each in its own database with a default
+name that can be overridden (`name`, `visibilityName`, `apiDatabaseName`).
 
 ## Security model
 
-- Integrations authenticate to the engine endpoint with namespace tokens issued by the Manager, optionally bound
+- Integrations authenticate to the engine endpoint with namespace tokens issued by the API server, optionally bound
   to a task queue. Temporal's default authorizer is namespace-wide; the engine will add its own authorizer that
   limits each token to its task queue.
 - People sign in through OIDC against the customer's identity provider. Roles are scoped to the runtime, a
@@ -83,7 +95,7 @@ Both can share one database server, in separate schemas.
   pinned in one file, and Temporal's extension points (authorization, persistence plugins, interceptors), which
   exist only in Go.
 - Dependency and Go toolchain fixes ship from our `go.mod` without waiting for a Temporal release.
-- The Manager is Go as well, so the distribution is one runtime: static binaries, one minimal image, one set of
+- The API server is Go as well, so the distribution is one runtime: static binaries, one minimal image, one set of
   security scans.
 
 ## Decisions

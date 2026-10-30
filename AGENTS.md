@@ -13,10 +13,10 @@ Read [docs/guides/ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) before changing 
 | Component | Path | What it does |
 |---|---|---|
 | Engine | `engine/` | Our Go binary that embeds Temporal's server (frontend, history, matching, worker) as a library, pinned in `engine/go.mod` |
-| Engine endpoint | `engine/` (planned) | The integrations' one port (7233): gRPC to Temporal's frontend, `/runtime/...` HTTPS to the Manager |
+| Engine endpoint | `engine/` (planned) | The integrations' one port (7233): gRPC to Temporal's frontend, `/runtime/...` HTTPS to the API server |
 | Launcher | `launcher/` (planned) | Starts components per profile, writes Temporal's configuration from `conf/runtime.toml`, enforces one-minor upgrades |
-| Manager | `manager/` (planned) | Go service: engine administration, Workflow Management API, SSO sign-in, roles; serves both portals |
-| Portals | `portals/` (planned) | Admin Portal and User Portal, static TypeScript apps served by the Manager |
+| API server | `api/` | Go service (`workflow-api`): engine administration, Workflow Management API, SSO sign-in, roles; serves both portals. Skeleton today: configuration, its database, health endpoints |
+| Portals | `portals/` (planned) | Admin Portal and User Portal, static TypeScript apps served by the API server |
 | Distribution | `distribution/` | Zip and Docker layout, `conf/runtime.toml` |
 | Tests | `tests/` | Ballerina smoke and full suites run against the engine binary |
 | Tools | `tools/` | Go module with the repository's own tools: the coverage gate, the Ballerina suite runner, script tests |
@@ -28,7 +28,7 @@ Decision records live in `docs/decisions/`; feature documentation in `docs/featu
 
 | Command | What it does |
 |---|---|
-| `make build` | Build `build/workflow-engine` and `build/workflow-engine-sql` |
+| `make build` | Build `build/workflow-engine`, `build/workflow-engine-sql` and `build/workflow-api` |
 | `make test` | Go unit tests in every `go.work` module |
 | `make test-coverage` | Unit tests plus the coverage gate (75% minimum, `cmd/` wrappers excluded) |
 | `make test-race` | Unit tests with the race detector (CI runs it on every pull request) |
@@ -134,7 +134,7 @@ title with `amannn/action-semantic-pull-request`):
 ```
 
 - Types: `feat`, `fix`, `build`, `chore`, `ci`, `docs`, `style`, `refactor`, `perf`, `test`, `revert`.
-- Scope: the component (`engine`, `launcher`, `manager`, `portals`, `dist`, `tests`, `deps`).
+- Scope: the component (`engine`, `launcher`, `api`, `portals`, `dist`, `tests`, `deps`).
 - The description starts with a lowercase verb in the imperative mood ("add", not "added"), has no final period,
   and the subject is at most 72 characters (aim for 50).
 - A breaking change uses `!` before the colon (`feat(engine)!: ...`).

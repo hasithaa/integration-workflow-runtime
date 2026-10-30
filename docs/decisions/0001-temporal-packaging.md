@@ -95,13 +95,13 @@ the embedding API (Temporal does not promise it is stable; a bump can need small
 | **3. CVE in the Go toolchain or standard library** | Rebuild with the patched Go release. Only possible because we build | Engine update |
 | **4. Temporal bug, not fixed upstream** | Commit the fix on the fork's `release/v1.32.x-wso2` branch, tag `v1.32.1-wso2.1`, add `replace go.temporal.io/server => <fork module> v1.32.1-wso2.1`; open the upstream PR (Temporal's CLA applies). Drop the `replace` when upstream releases the fix | Engine update |
 | **5. Temporal will not take our change** | Keep it in the fork and carry it forward on each upgrade; prefer an extension point (case 7) where one exists | Engine update |
-| **6. Upgrade to the next minor** | One minor at a time, as Temporal requires. Bump the pin, run `workflow-engine-sql update-schema` against a copy of the previous release's database in the upgrade tests. The launcher refuses to start an engine more than one minor ahead of the version recorded in the Runtime DB | Product release |
+| **6. Upgrade to the next minor** | One minor at a time, as Temporal requires. Bump the pin, run `workflow-engine-sql update-schema` against a copy of the previous release's database in the upgrade tests. The launcher refuses to start an engine more than one minor ahead of the version recorded in the API server's database | Product release |
 | **7. Our own feature** (SQL Server or Oracle plugin, authorizer, config) | A package under `engine/plugins/`, registered from `main.go`. No fork | Product release |
 | **8. Fix for an older product release** | Each product release line has a maintenance branch (`release/1.0.x`) with its own `engine/go.mod` pin; backport there | Update for that line |
 | **9. Advisory with no fix available** | Mitigate by configuration (disable the feature, network rule), document it in the advisory, track upstream | Configuration change |
 
 Delivery: the engine is one static binary, so an update replaces it whole. The launcher restarts the affected
-profile one node at a time; Manager and portal updates do not restart the engine, and the reverse.
+profile one node at a time; API server and portal updates do not restart the engine, and the reverse.
 
 Versions: `workflow-engine version` prints the product version and the embedded Temporal version; both go into the
 release notes and the SBOM. A fork build carries the `-wso2.N` suffix, so a support engineer can see at once that

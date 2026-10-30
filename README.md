@@ -1,13 +1,13 @@
 # WSO2 Integration Workflow Runtime
 
-Durable workflow engine for WSO2 Integrator: embedded Temporal, a Go Manager with SSO and RBAC, and admin and
+Durable workflow engine for WSO2 Integrator: embedded Temporal, a Go API server with SSO and RBAC, and admin and
 user portals, in one distribution.
 
 The runtime is the engine that runs WSO2 Integrator's durable workflows. It is built on the open-source Temporal
 server, which runs inside it as an internal component: customers provide a database and an identity provider,
 and never install or patch Temporal themselves.
 
-Status: early development. The engine builds and runs; the launcher, Manager and portals are being built.
+Status: early development. The engine builds and runs; the API server is a skeleton; the launcher and portals are being built.
 
 ## Layout
 
@@ -15,8 +15,8 @@ Status: early development. The engine builds and runs; the launcher, Manager and
 |---|---|---|
 | `engine/` | Temporal's services in our own binary (`workflow-engine`) and the schema tool (`workflow-engine-sql`) | Go |
 | `launcher/` | Starts and supervises components per profile; writes Temporal's configuration from `runtime.toml`; enforces one-minor upgrades | Go |
-| `manager/` | The Manager: administration API, SSO sign-in, roles; serves the portals | Go |
-| `portals/` | Admin Portal and User Portal, static web apps served by the Manager | TypeScript |
+| `api/` | The API server (`workflow-api`): administration and Workflow Management APIs, SSO sign-in, roles; serves the portals | Go |
+| `portals/` | Admin Portal and User Portal, static web apps served by the API server | TypeScript |
 | `distribution/` | Zip and Docker assembly, configuration templates, start scripts | Shell, Docker |
 | `tests/` | Ballerina smoke and full suites run against the engine binary | Ballerina |
 | `tools/` | The repository's own tools: coverage gate, Ballerina suite runner, script tests | Go |
@@ -33,7 +33,7 @@ Needs Go 1.26.8 or later; the Go toolchain downloads it on demand.
 
 ```sh
 make install-hooks   # commit checks
-make build           # build/workflow-engine, build/workflow-engine-sql
+make build           # build/workflow-engine, build/workflow-engine-sql, build/workflow-api
 make check           # every CI gate: vet, lint, gofmt, unit tests (75% coverage), licenses, vulnerabilities
 make test-smoke      # Ballerina smoke suite against the engine (needs bal and the temporal CLI)
 make test-full       # Ballerina full suite

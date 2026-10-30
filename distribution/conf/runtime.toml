@@ -1,7 +1,8 @@
-# The runtime's configuration. [engine] and [database] are read by workflow-engine (docs/features/runtime-config.md);
-# the other tables are illustrative until their components arrive.
+# The runtime's configuration. [engine] and [database] are read by workflow-engine (docs/features/runtime-config.md),
+# [api] and [database] by workflow-api (docs/features/api-server.md); the other tables are illustrative until their
+# components arrive.
 [runtime]
-profiles = ["all"]          # or e.g. ["history"], ["manager"]
+profiles = ["all"]          # or e.g. ["history"], ["api"]
 
 [engine]
 # Listen on every interface and tell other nodes and clients which address reaches this one.
@@ -18,10 +19,17 @@ user = "workflow"
 password = "$env{WORKFLOW_DB_PASSWORD}"
 name = "temporal"
 visibilityName = "temporal_visibility"
+# apiDatabaseName = "workflow_api"   # the API server's database; SQLite: <apiDatabaseName>.db next to path
 
 # [database.tls]
 # enabled = true
 # caFile = "conf/certs/db-ca.pem"
+
+[api]
+bindAddress = "127.0.0.1"   # plain HTTP for now; keep it on loopback or a private network until TLS arrives
+port = 9090
+# The engine's frontend; defaults to this node's [engine] broadcastAddress (or bindAddress) and frontend port.
+# engineAddress = "10.0.0.5:7233"
 
 [users]
 store = "local"             # "local" (try-out and demos) or "sso" (production); never both

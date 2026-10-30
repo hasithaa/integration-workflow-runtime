@@ -12,7 +12,7 @@ dependency with an incompatible license may slip in.
 
 | Component | License |
 |---|---|
-| Our code: engine, launcher and Manager (Go), portals (TypeScript) | Apache 2.0 |
+| Our code: engine, launcher and API server (Go), portals (TypeScript) | Apache 2.0 |
 | Temporal server (`go.temporal.io/server`) | MIT. Copyright (c) 2025 Temporal Technologies Inc., Copyright (c) 2020 Uber Technologies, Inc. |
 | Go modules linked into the engine | Mostly Apache 2.0, MIT and BSD; the full list is `third-party/go-licenses.csv` |
 | Go runtime and standard library | BSD-3-Clause |

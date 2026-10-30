@@ -9,7 +9,7 @@
 | Ballerina smoke suite | `tests/ballerina/smoke` | `make test-smoke`, every pull request | All pass |
 | Ballerina full suite | `tests/ballerina/full` | `make test-full`, on `main`, nightly, on demand | All pass |
 | License and vulnerability checks | `make license-check`, `make vulncheck` | Every pull request and daily | No findings |
-| SBOM | `make sbom` | Every pull request, daily, and in every distribution | Builds for both binaries |
+| SBOM | `make sbom` | Every pull request, daily, and in every distribution | Builds for every binary |
 
 ## Go unit tests
 
@@ -19,6 +19,9 @@
 - `make test-coverage` writes profiles to `build/coverage/` and fails below 75%. `cmd/` packages are thin `main`
   wrappers and are excluded; the Ballerina suites exercise the real binaries.
 - `make test-race` runs the unit tests with the race detector; CI runs it on every pull request.
+- The API server's PostgreSQL and MySQL tests (`api/internal/database`) run only when `WORKFLOW_TEST_DB_PASSWORD`
+  is set, against the same test databases as the Ballerina suites (15432, user `workflow`; 13306, user `root`),
+  in databases named `api_test_*` that they drop afterwards. Without it they are skipped; SQLite tests always run.
 
 ## Ballerina suites
 

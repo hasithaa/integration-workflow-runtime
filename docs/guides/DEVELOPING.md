@@ -15,15 +15,15 @@ named after its version, so a version bump in the `Makefile` installs the new on
 
 ## Layout
 
-The repository is a Go workspace (`go.work`). Each component is its own module (`engine/` today; `launcher/` and
-`manager/` as they arrive), so `make` targets loop over the workspace modules. `tools/` is the module for the
+The repository is a Go workspace (`go.work`). Each component is its own module (`engine/` and `api/` today; `launcher/`
+as it arrives), so `make` targets loop over the workspace modules. `tools/` is the module for the
 repository's own tools: the coverage gate (`covercheck`), the Ballerina suite runner (`balsuite`) and the tests
 of the shell scripts in `.github/scripts`.
 
 ## Build and run
 
 ```sh
-make build                                  # build/workflow-engine, build/workflow-engine-sql
+make build                                  # build/workflow-engine, build/workflow-engine-sql, build/workflow-api
 ./build/workflow-engine version
 ./build/workflow-engine render-config --runtime-config tests/engine/runtime-sqlite.toml   # inspect the generated config
 ./build/workflow-engine start --runtime-config tests/engine/runtime-sqlite.toml --allow-no-auth
@@ -40,6 +40,14 @@ temporal operator namespace create --namespace default --address localhost:17233
 
 `--allow-no-auth` is for development and tests only: without it the engine refuses to start unless an
 authorizer is configured.
+
+The API server reads the same file. With the engine above running, start it on the default port 9090; it puts its
+database in memory as well and finds the frontend on 17233 from `[engine.ports]`:
+
+```sh
+./build/workflow-api start --runtime-config tests/engine/runtime-sqlite.toml
+curl localhost:9090/readyz      # {"status":"ready","checks":{"database":"ok","engine":"ok"}}
+```
 
 ## Checks
 
