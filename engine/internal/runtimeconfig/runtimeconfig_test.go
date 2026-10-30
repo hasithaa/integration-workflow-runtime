@@ -29,11 +29,11 @@ func noEnv(string) (string, bool) { return "", false }
 
 func mustParse(t *testing.T, toml string) *config.Config {
 	t.Helper()
-	cfg, err := parse([]byte(toml), noEnv)
+	rt, err := parse([]byte(toml), noEnv)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	return cfg
+	return rt.Temporal
 }
 
 func TestDatabaseTypesMapToTemporalPlugins(t *testing.T) {
@@ -163,11 +163,11 @@ enableHostVerification = true
 
 func TestPasswordFromEnvironment(t *testing.T) {
 	lookup := func(name string) (string, bool) { return "from-env", name == "WF_DB_PASSWORD" }
-	cfg, err := parse([]byte("[database]\ntype = \"postgresql\"\nhost = \"db\"\npassword = \"$env{WF_DB_PASSWORD}\"\n"), lookup)
+	rt, err := parse([]byte("[database]\ntype = \"postgresql\"\nhost = \"db\"\npassword = \"$env{WF_DB_PASSWORD}\"\n"), lookup)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := cfg.Persistence.DataStores[visibilityStore].SQL.Password; got != "from-env" {
+	if got := rt.Temporal.Persistence.DataStores[visibilityStore].SQL.Password; got != "from-env" {
 		t.Fatalf("password = %q, want the environment value", got)
 	}
 }
@@ -247,5 +247,31 @@ func TestRenderHidesPasswords(t *testing.T) {
 	}
 	if cfg.Persistence.DataStores[defaultStore].SQL.Password != "s3cret" {
 		t.Fatal("Render changed the configuration it was given")
+	}
+}
+
+func TestManageSchemaDefaultsToOn(t *testing.T) {
+	for toml, want := range map[string]bool{
+		"[database]\ntype = \"postgresql\"\nhost = \"db\"\n":                       true,
+		"[database]\ntype = \"postgresql\"\nhost = \"db\"\nmanageSchema = false\n": false,
+		"[database]\ntype = \"sqlite\"\ninMemory = true\n":                         true,
+	} {
+		rt, err := parse([]byte(toml), noEnv)
+		if err != nil {
+			t.Fatalf("parse(%q): %v", toml, err)
+		}
+		if rt.ManageSchema != want {
+			t.Errorf("parse(%q).ManageSchema = %v, want %v", toml, rt.ManageSchema, want)
+		}
+	}
+}
+
+func TestDatabaseNamesTheEngineCannotCreate(t *testing.T) {
+	bad := "[database]\ntype = \"mysql\"\nhost = \"db\"\nname = \"temporal-main\"\n"
+	if _, err := parse([]byte(bad), noEnv); err == nil || !strings.Contains(err.Error(), "database.name \"temporal-main\"") {
+		t.Fatalf("parse = %v, want the database name refused", err)
+	}
+	if _, err := parse([]byte(bad+"manageSchema = false\n"), noEnv); err != nil {
+		t.Fatalf("parse with manageSchema = false: %v, want the name accepted", err)
 	}
 }

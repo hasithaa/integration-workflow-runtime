@@ -19,12 +19,14 @@ package cli
 import (
 	"bytes"
 	"errors"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
 	"go.temporal.io/server/common/config"
+	"go.temporal.io/server/common/log"
 	"go.temporal.io/server/temporal"
 )
 
@@ -51,6 +53,7 @@ func newTestCommand(server temporal.Server, factoryErr error) (command, *bytes.B
 		newServer: func(...temporal.ServerOption) (temporal.Server, error) {
 			return server, factoryErr
 		},
+		prepareSchema: func(config.Persistence, log.Logger) error { return nil },
 	}
 	return c, stdout, stderr
 }
@@ -285,5 +288,60 @@ func TestRenderConfigErrors(t *testing.T) {
 	}
 	if err := c.renderConfig([]string{"--no-such-flag"}); err == nil {
 		t.Fatal("render-config accepted an unknown flag")
+	}
+}
+
+func TestStartPreparesTheSchemaBeforeTheServer(t *testing.T) {
+	server := &fakeServer{}
+	c, _, _ := newTestCommand(server, nil)
+	var prepared []string
+	c.prepareSchema = func(p config.Persistence, _ log.Logger) error {
+		if server.started {
+			t.Error("the schema was prepared after the server started")
+		}
+		prepared = append(prepared, p.DataStores[p.DefaultStore].SQL.DatabaseName)
+		return nil
+	}
+	args := []string{"start", "--runtime-config", "testdata/runtime-postgresql.toml", "--allow-no-auth"}
+	if code := c.run(args); code != 0 || !server.started {
+		t.Fatalf("exit code = %d, started = %v, want 0 and started", code, server.started)
+	}
+	if !slices.Equal(prepared, []string{"temporal"}) {
+		t.Fatalf("prepared = %v, want the temporal database once", prepared)
+	}
+}
+
+func TestStartStopsWhenTheSchemaCannotBePrepared(t *testing.T) {
+	server := &fakeServer{}
+	c, _, stderr := newTestCommand(server, nil)
+	c.prepareSchema = func(config.Persistence, log.Logger) error { return errors.New("connection refused") }
+	args := []string{"start", "--runtime-config", "testdata/runtime-postgresql.toml", "--allow-no-auth"}
+	if code := c.run(args); code != 1 || server.started {
+		t.Fatalf("exit code = %d, started = %v, want 1 and not started", code, server.started)
+	}
+	if !strings.Contains(stderr.String(), "unable to prepare the database schema: connection refused") {
+		t.Fatalf("stderr = %q, want the schema error", stderr.String())
+	}
+}
+
+func TestStartLeavesTheSchemaAloneWhenAsked(t *testing.T) {
+	unmanaged := filepath.Join(t.TempDir(), "runtime.toml")
+	toml := "[database]\ntype = \"postgresql\"\nhost = \"db\"\nmanageSchema = false\n"
+	if err := os.WriteFile(unmanaged, []byte(toml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"start", "--runtime-config", unmanaged, "--allow-no-auth"},
+		{"start", "--config-file", minimalConfig, "--allow-no-auth"},
+	} {
+		server := &fakeServer{}
+		c, _, _ := newTestCommand(server, nil)
+		c.prepareSchema = func(config.Persistence, log.Logger) error {
+			t.Errorf("%v prepared the schema", args)
+			return nil
+		}
+		if code := c.run(args); code != 0 || !server.started {
+			t.Fatalf("%v: exit code = %d, started = %v, want 0 and started", args, code, server.started)
+		}
 	}
 }

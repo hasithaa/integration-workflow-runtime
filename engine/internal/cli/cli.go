@@ -39,6 +39,7 @@ import (
 	"go.temporal.io/server/temporal"
 
 	"github.com/wso2/integration-workflow-runtime/engine/internal/runtimeconfig"
+	"github.com/wso2/integration-workflow-runtime/engine/internal/sqlschema"
 )
 
 const usageText = `usage: workflow-engine version
@@ -47,16 +48,22 @@ const usageText = `usage: workflow-engine version
 
 type serverFactory func(opts ...temporal.ServerOption) (temporal.Server, error)
 
+type schemaPreparer func(p config.Persistence, logger log.Logger) error
+
 type command struct {
-	version   string
-	stdout    io.Writer
-	stderr    io.Writer
-	newServer serverFactory
+	version       string
+	stdout        io.Writer
+	stderr        io.Writer
+	newServer     serverFactory
+	prepareSchema schemaPreparer
 }
 
 // Main runs the command with the given arguments and returns the process exit code.
 func Main(version string, args []string) int {
-	c := command{version: version, stdout: os.Stdout, stderr: os.Stderr, newServer: temporal.NewServer}
+	c := command{
+		version: version, stdout: os.Stdout, stderr: os.Stderr,
+		newServer: temporal.NewServer, prepareSchema: sqlschema.Prepare,
+	}
 	return c.run(args)
 }
 
@@ -110,7 +117,7 @@ func (c command) start(args []string) error {
 		}
 		return err
 	}
-	cfg, err := loadConfig(*runtimeConfig, *configFile)
+	cfg, manageSchema, err := loadConfig(*runtimeConfig, *configFile)
 	if err != nil {
 		return err
 	}
@@ -144,6 +151,11 @@ func (c command) start(args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create the audience mapper: %w", err)
 	}
+	if manageSchema {
+		if err := c.prepareSchema(cfg.Persistence, logger); err != nil {
+			return fmt.Errorf("unable to prepare the database schema: %w", err)
+		}
+	}
 
 	server, err := c.newServer(
 		temporal.ForServices(services),
@@ -170,11 +182,11 @@ func (c command) renderConfig(args []string) error {
 	if *runtimeConfig == "" {
 		return errors.New("--runtime-config is required")
 	}
-	cfg, err := runtimeconfig.Load(*runtimeConfig)
+	rt, err := runtimeconfig.Load(*runtimeConfig)
 	if err != nil {
 		return err
 	}
-	rendered, err := runtimeconfig.Render(cfg)
+	rendered, err := runtimeconfig.Render(rt.Temporal)
 	if err != nil {
 		return fmt.Errorf("unable to render the configuration: %w", err)
 	}
@@ -182,21 +194,26 @@ func (c command) renderConfig(args []string) error {
 	return err
 }
 
-// loadConfig returns the Temporal configuration from exactly one of a runtime.toml and a Temporal YAML file.
-func loadConfig(runtimeConfig, configFile string) (*config.Config, error) {
+// loadConfig returns the Temporal configuration from exactly one of a runtime.toml and a Temporal YAML file, and
+// whether the engine prepares the database schema; a Temporal YAML file is used as is.
+func loadConfig(runtimeConfig, configFile string) (*config.Config, bool, error) {
 	switch {
 	case runtimeConfig != "" && configFile != "":
-		return nil, errors.New("pass either --runtime-config or --config-file, not both")
+		return nil, false, errors.New("pass either --runtime-config or --config-file, not both")
 	case runtimeConfig != "":
-		return runtimeconfig.Load(runtimeConfig)
+		rt, err := runtimeconfig.Load(runtimeConfig)
+		if err != nil {
+			return nil, false, err
+		}
+		return rt.Temporal, rt.ManageSchema, nil
 	case configFile != "":
 		cfg, err := config.Load(config.WithConfigFile(configFile))
 		if err != nil {
-			return nil, fmt.Errorf("unable to load configuration: %w", err)
+			return nil, false, fmt.Errorf("unable to load configuration: %w", err)
 		}
-		return cfg, nil
+		return cfg, false, nil
 	default:
-		return nil, errors.New("--runtime-config or --config-file is required")
+		return nil, false, errors.New("--runtime-config or --config-file is required")
 	}
 }
 

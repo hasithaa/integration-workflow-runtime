@@ -25,6 +25,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -61,7 +62,17 @@ var (
 	pluginNames    = map[string]string{typePostgreSQL: "postgres12", typeMySQL: "mysql8", typeSQLite: "sqlite"}
 	defaultDBPorts = map[string]int{typePostgreSQL: 5432, typeMySQL: 3306}
 	logLevels      = []string{"debug", "info", "warn", "error"}
+	// databaseName is what the engine can create on both servers; MySQL's CREATE DATABASE takes the name unquoted.
+	databaseName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,62}$`)
 )
+
+// Runtime is what the engine takes from runtime.toml.
+type Runtime struct {
+	// Temporal is the generated, validated Temporal server configuration.
+	Temporal *config.Config
+	// ManageSchema is whether the engine creates and upgrades the SQL databases and schemas before it starts.
+	ManageSchema bool
+}
 
 type settings struct {
 	Engine   engineSettings   `toml:"engine"`
@@ -96,6 +107,7 @@ type databaseSettings struct {
 	Path           string      `toml:"path"`
 	InMemory       bool        `toml:"inMemory"`
 	MaxConns       int         `toml:"maxConns"`
+	ManageSchema   *bool       `toml:"manageSchema"`
 	TLS            tlsSettings `toml:"tls"`
 }
 
@@ -108,8 +120,8 @@ type tlsSettings struct {
 	EnableHostVerification bool   `toml:"enableHostVerification"`
 }
 
-// Load reads a runtime.toml file and returns the validated Temporal server configuration it describes.
-func Load(path string) (*config.Config, error) {
+// Load reads a runtime.toml file and returns the validated configuration it describes.
+func Load(path string) (*Runtime, error) {
 	data, err := os.ReadFile(filepath.Clean(path)) //nolint:gosec // G304: the path is the operator's --runtime-config flag
 	if err != nil {
 		return nil, fmt.Errorf("unable to read %s: %w", path, err)
@@ -132,7 +144,7 @@ func Render(cfg *config.Config) ([]byte, error) {
 	return yaml.Marshal(&copied)
 }
 
-func parse(data []byte, lookupEnv func(string) (string, bool)) (*config.Config, error) {
+func parse(data []byte, lookupEnv func(string) (string, bool)) (*Runtime, error) {
 	values, err := toml.Parser().Unmarshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("invalid runtime configuration: %w", err)
@@ -160,7 +172,7 @@ func parse(data []byte, lookupEnv func(string) (string, bool)) (*config.Config, 
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid Temporal configuration: %w", err)
 	}
-	return cfg, nil
+	return &Runtime{Temporal: cfg, ManageSchema: *s.Database.ManageSchema}, nil
 }
 
 // decodeTable fills target from one of the tables this package owns, rejecting unknown keys (typos) in it; the
@@ -195,6 +207,10 @@ func (s *settings) applyDefaults() {
 	e.Ports.History = withDefault(e.Ports.History, 7234)
 	e.Ports.Matching = withDefault(e.Ports.Matching, 7235)
 	e.Ports.Worker = withDefault(e.Ports.Worker, 7239)
+	if d.ManageSchema == nil {
+		manage := true
+		d.ManageSchema = &manage
+	}
 
 	if d.Type == typeSQLite {
 		e.HistoryShards = withDefault(e.HistoryShards, 1)
@@ -244,6 +260,12 @@ func (s *settings) validate() error {
 		}
 		if d.Name == d.VisibilityName {
 			problems = append(problems, "database.name and database.visibilityName must differ")
+		}
+		for _, n := range []struct{ key, value string }{{"name", d.Name}, {"visibilityName", d.VisibilityName}} {
+			if *d.ManageSchema && !databaseName.MatchString(n.value) {
+				problems = append(problems, fmt.Sprintf("database.%s %q must be letters, digits and underscores, "+
+					"starting with a letter or underscore, when the engine manages the schema", n.key, n.value))
+			}
 		}
 	}
 	if !d.TLS.Enabled && (d.TLS.CAFile != "" || d.TLS.CertFile != "" || d.TLS.KeyFile != "") {

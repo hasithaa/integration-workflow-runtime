@@ -31,6 +31,7 @@ other, not both.
 | `path` | | SQLite only: the database file. Both stores share it, and its schema is created on first start |
 | `inMemory` | false | SQLite only: keep everything in memory (tests and trying out); use instead of `path` |
 | `maxConns` | 20 (1 for SQLite) | Connections per store |
+| `manageSchema` | `true` | Create the databases and bring their schemas up to date on start ([database schema](database-schema.md)) |
 | `[database.tls]` `enabled`, `caFile`, `certFile`, `keyFile`, `serverName`, `enableHostVerification` | off | TLS to the database |
 
 ### `[engine]`
@@ -57,8 +58,8 @@ Other tables (`[runtime]`, `[users]`, the portals) belong to other components an
   name for both databases, TLS files without TLS enabled, or a `$env{NAME}` whose variable is not set.
 - The generated configuration is then checked with Temporal's own validation.
 - `$secret{...}` references are rejected with a clear message until secure-vault support exists.
-- For PostgreSQL and MySQL, the databases and their schemas must exist; for now create them with
-  `workflow-engine-sql` (see `engine/README.md`). Creating them on first start is a separate feature.
+- For PostgreSQL and MySQL, `start` creates the databases and brings their schemas up to date before Temporal
+  starts, unless `manageSchema = false` ([database schema](database-schema.md)).
 
 ## Limits
 
@@ -69,8 +70,8 @@ Other tables (`[runtime]`, `[users]`, the portals) belong to other components an
 
 ## Not covered yet
 
-Authorization and TLS for the engine's own endpoints, profiles (which services a node runs), schema creation and
-upgrade on first start, Cassandra, and secure-vault secrets.
+Authorization and TLS for the engine's own endpoints, profiles (which services a node runs), Cassandra, and
+secure-vault secrets.
 
 ## Tests
 
