@@ -6,5 +6,6 @@ in the same commit ([AGENTS.md](../../AGENTS.md#rules-for-every-change)). Start 
 
 | Feature | Status |
 |---|---|
+| [API server](api-server.md) | In progress |
 | [Engine](engine.md) | Available |
 | [Runtime configuration](runtime-config.md) | Available |
