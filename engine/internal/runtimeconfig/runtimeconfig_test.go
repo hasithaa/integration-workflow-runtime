@@ -186,6 +186,16 @@ inMemory = true
 `)
 }
 
+func TestAPIDatabaseNameIsAcceptedAndLeftToTheAPIServer(t *testing.T) {
+	cfg := mustParse(t, "[database]\ntype = \"postgresql\"\nhost = \"db\"\napiDatabaseName = \"wf_api\"\n")
+	for name, store := range cfg.Persistence.DataStores {
+		if store.SQL.DatabaseName == "wf_api" {
+			t.Errorf("store %s uses the API server's database", name)
+		}
+	}
+	mustParse(t, "[database]\ntype = \"sqlite\"\npath = \"data/workflow.db\"\napiDatabaseName = \"wf_api\"\n")
+}
+
 func TestInvalidConfigurationsAreRejected(t *testing.T) {
 	tests := []struct{ name, toml, want string }{
 		{"not toml", "[database\n", "invalid runtime configuration"},
@@ -196,6 +206,13 @@ func TestInvalidConfigurationsAreRejected(t *testing.T) {
 		{"missing host", "[database]\ntype = \"postgresql\"\n", "database.host is required"},
 		{"bad database port", "[database]\ntype = \"mysql\"\nhost = \"db\"\nport = 70000\n", "database.port 70000"},
 		{"same database names", "[database]\ntype = \"mysql\"\nhost = \"db\"\nname = \"x\"\nvisibilityName = \"x\"\n", "must differ"},
+		{"api database clashes with name", "[database]\ntype = \"mysql\"\nhost = \"db\"\napiDatabaseName = \"temporal\"\n",
+			"apiDatabaseName must differ"},
+		{"api database clashes with visibility",
+			"[database]\ntype = \"postgresql\"\nhost = \"db\"\nvisibilityName = \"v\"\napiDatabaseName = \"v\"\n",
+			"apiDatabaseName must differ"},
+		{"default api database name taken", "[database]\ntype = \"postgresql\"\nhost = \"db\"\nname = \"workflow_api\"\n",
+			"apiDatabaseName must differ"},
 		{"sqlite without location", "[database]\ntype = \"sqlite\"\n", "exactly one of database.path"},
 		{"sqlite with both", "[database]\ntype = \"sqlite\"\npath = \"a.db\"\ninMemory = true\n", "exactly one of database.path"},
 		{"bad log level", "[engine]\nlogLevel = \"loud\"\n[database]\ntype = \"sqlite\"\ninMemory = true\n", `engine.logLevel "loud"`},

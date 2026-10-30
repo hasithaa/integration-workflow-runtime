@@ -86,17 +86,19 @@ type portsSettings struct {
 }
 
 type databaseSettings struct {
-	Type           string      `toml:"type"`
-	Host           string      `toml:"host"`
-	Port           int         `toml:"port"`
-	User           string      `toml:"user"`
-	Password       string      `toml:"password"`
-	Name           string      `toml:"name"`
-	VisibilityName string      `toml:"visibilityName"`
-	Path           string      `toml:"path"`
-	InMemory       bool        `toml:"inMemory"`
-	MaxConns       int         `toml:"maxConns"`
-	TLS            tlsSettings `toml:"tls"`
+	Type           string `toml:"type"`
+	Host           string `toml:"host"`
+	Port           int    `toml:"port"`
+	User           string `toml:"user"`
+	Password       string `toml:"password"`
+	Name           string `toml:"name"`
+	VisibilityName string `toml:"visibilityName"`
+	// APIDatabaseName is the API server's database; the engine only checks that it does not clash with its own.
+	APIDatabaseName string      `toml:"apiDatabaseName"`
+	Path            string      `toml:"path"`
+	InMemory        bool        `toml:"inMemory"`
+	MaxConns        int         `toml:"maxConns"`
+	TLS             tlsSettings `toml:"tls"`
 }
 
 type tlsSettings struct {
@@ -205,6 +207,7 @@ func (s *settings) applyDefaults() {
 	d.Port = withDefault(d.Port, defaultDBPorts[d.Type])
 	d.Name = withDefault(d.Name, "temporal")
 	d.VisibilityName = withDefault(d.VisibilityName, "temporal_visibility")
+	d.APIDatabaseName = withDefault(d.APIDatabaseName, "workflow_api")
 	d.MaxConns = withDefault(d.MaxConns, 20)
 }
 
@@ -244,6 +247,9 @@ func (s *settings) validate() error {
 		}
 		if d.Name == d.VisibilityName {
 			problems = append(problems, "database.name and database.visibilityName must differ")
+		}
+		if d.APIDatabaseName == d.Name || d.APIDatabaseName == d.VisibilityName {
+			problems = append(problems, "database.apiDatabaseName must differ from database.name and database.visibilityName")
 		}
 	}
 	if !d.TLS.Enabled && (d.TLS.CAFile != "" || d.TLS.CertFile != "" || d.TLS.KeyFile != "") {

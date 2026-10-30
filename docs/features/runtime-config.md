@@ -28,6 +28,7 @@ other, not both.
 | `user`, `password` | empty | Credentials. `password` is a literal or `$env{NAME}` (read from the environment) |
 | `name` | `temporal` | Database for Temporal's workflow state |
 | `visibilityName` | `temporal_visibility` | Database for Temporal's visibility (instance lists and search); must differ from `name` |
+| `apiDatabaseName` | `workflow_api` | The [API server](api-server.md)'s database; must differ from `name` and `visibilityName`. The engine accepts it and leaves it to the API server |
 | `path` | | SQLite only: the database file. Both stores share it, and its schema is created on first start |
 | `inMemory` | false | SQLite only: keep everything in memory (tests and trying out); use instead of `path` |
 | `maxConns` | 20 (1 for SQLite) | Connections per store |
@@ -54,7 +55,7 @@ Other tables (`[runtime]`, `[users]`, the portals) belong to other components an
 - Unknown keys in `[engine]` or `[database]` are rejected, so a typo fails at start instead of being ignored.
 - The engine refuses to start on invalid settings: an unknown database type, a missing host, invalid or duplicate
   ports (membership ports included), a SQLite database with both or neither of `path` and `inMemory`, the same
-  name for both databases, TLS files without TLS enabled, or a `$env{NAME}` whose variable is not set.
+  name for two databases (`name`, `visibilityName`, `apiDatabaseName`), TLS files without TLS enabled, or a `$env{NAME}` whose variable is not set.
 - The generated configuration is then checked with Temporal's own validation.
 - `$secret{...}` references are rejected with a clear message until secure-vault support exists.
 - For PostgreSQL and MySQL, the databases and their schemas must exist; for now create them with
@@ -63,7 +64,8 @@ Other tables (`[runtime]`, `[users]`, the portals) belong to other components an
 ## Limits
 
 - `historyShards` cannot change after the first start.
-- Both stores use the same database server and credentials; only their database names differ.
+- Every database (Temporal's two and the API server's) uses the same database server and credentials, as in
+  Temporal's model: one `[database]` connection, a default name per database, each name overridable.
 - A password is a literal or `$env{NAME}`; secure-vault references are not supported yet.
 - SQLite uses one connection and is for development and tests.
 
